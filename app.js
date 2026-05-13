@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   app.js — SHIFODUR Mini App
+   app.js — TIB va DAM Mini App
    Telegram WebApp SDK orqali bot bilan aloqa
    ═══════════════════════════════════════════════════════════════════════════ */
 
