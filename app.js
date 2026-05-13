@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   app.js — TIB va DAM Mini App
+   app.js — TIB VA DAM Mini App
    Telegram WebApp SDK orqali bot bilan aloqa
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -202,33 +202,47 @@ if (tg) {
 }
 
 // ── SYMPTOM LIST RENDERER ─────────────────────────────────────────────────────
+// FIX: <label>+checkbox double-fire muammosidan qochish uchun <div> ishlatiladi
 function renderSymptomList(containerId, data, selectedSet, countId) {
   const container = document.getElementById(containerId);
   if (!container) return;
   container.innerHTML = "";
+
+  function updateCount() {
+    if (!countId) return;
+    const el = document.getElementById(countId);
+    if (el) el.textContent = selectedSet.size
+      ? `${selectedSet.size} ta belgilandi`
+      : "Hech narsa belgilanmadi";
+  }
+
   data.forEach(([label, key]) => {
-    const item = document.createElement("label");
+    const item = document.createElement("div");
     item.className = "symptom-item" + (selectedSet.has(key) ? " checked" : "");
     item.innerHTML = `
-      <input type="checkbox" ${selectedSet.has(key) ? "checked" : ""}>
       <span class="sym-box">
         <svg class="sym-check" viewBox="0 0 10 10" fill="none">
-          <polyline points="1.5,5.5 4,8 8.5,2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="1.5,5.5 4,8 8.5,2" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </span>
       <span class="sym-label">${label}</span>`;
+
     item.addEventListener("click", () => {
-      selectedSet.has(key) ? selectedSet.delete(key) : selectedSet.add(key);
-      item.classList.toggle("checked");
-      item.querySelector("input").checked = selectedSet.has(key);
-      if (countId) {
-        document.getElementById(countId).textContent = selectedSet.size
-          ? `${selectedSet.size} ta belgilandi`
-          : "Hech narsa belgilanmadi";
+      if (selectedSet.has(key)) {
+        selectedSet.delete(key);
+        item.classList.remove("checked");
+      } else {
+        selectedSet.add(key);
+        item.classList.add("checked");
       }
+      updateCount();
     });
+
     container.appendChild(item);
   });
+
+  updateCount();
 }
 
 // ── CHIP/WORD RENDERER ────────────────────────────────────────────────────────
