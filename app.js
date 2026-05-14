@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   app.js —  Mini App  (to'liq qayta yozilgan)
+   app.js — SHIFODUR Mini App  (to'liq qayta yozilgan)
    HTML id-lari: s-menu, s-register, s-uyqu, s-ongi, s-xonadon,
                  s-complaint, s-loading, s-result, s-zikr, s-zikr-detail,
                  s-ruqiya-intro, s-ruqiya-listen, s-ruqiya-check,
@@ -402,6 +402,12 @@ function renderResult() {
   const c = el("result-symptoms");
   if (c) c.innerHTML = labels.length ? tagsHtml(labels) :
     '<span class="muted-text">—</span>';
+  // RAG javobini ko'rsatish
+  const rb = el("result-body");
+  if (rb && state.rag_answer) {
+    rb.style.whiteSpace = "pre-wrap";
+    rb.textContent = state.rag_answer;
+  }
 }
 
 // Kuzatuv ekrani
@@ -545,16 +551,19 @@ el("btn-complaint-submit")?.addEventListener("click", () => {
   state.all_labels = getAllLabels();
   go("s-loading");
 
-  sendToBot("analysis", {
+  const analysisPayload = {
     uyqu_symptoms:    getLabels(UYQU_SYMPTOMS,    state.uyqu_selected),
     ongi_symptoms:    getLabels(ONGI_SYMPTOMS,    state.ongi_selected),
     xonadon_symptoms: getLabels(XONADON_SYMPTOMS, state.xonadon_selected),
     all_symptoms:     state.all_labels,
     complaint:        txt,
-  });
+  };
 
-  // Bot javob beradi, 3 soniyadan keyin result ekraniga o'tamiz
-  setTimeout(() => go("s-result"), 3000);
+  // Anthropic API orqali tahlil olish (bot kabi)
+  runAnalysis(analysisPayload).then(answer => {
+    state.rag_answer = answer;
+    go("s-result");
+  });
 });
 
 /* ZIKR bo'limi olib tashlandi */
@@ -778,6 +787,109 @@ function initAudioPlayer() {
       const pct  = (e.clientX - rect.left) / rect.width;
       audio.currentTime = pct * audio.duration;
     });
+  }
+}
+
+
+/* ── ANTHROPIC API — TAHLIL (bot kabi) ────────────────────────────────────── */
+
+const SYSTEM_PROMPT = `Siz O'zbek tilida diniy maslahat beruvchi AI yordamchisiz.
+Uslubingiz: tajribali imom yoki olim kabi — muloyim, ilmli, ishonchli.
+
+TIL:
+  • Faqat O'zbek tilida, FAQAT Lotin yozuvida yozing
+  • Kirillcha harf ISHLATMANG
+  • Arabcha so'zlar lotin harflari bilan: "Alloh", "Qur'on", "hadis", "duo", "namoz"
+
+TAQIQLANADI:
+  • "Sizda jin bor" — aniq tashxis QO'YMASLIK
+  • "Bu sehr" — aniq hukm BERMASLIK
+  • Qo'rqituvchi yoki keskin xulosalar
+  • 🧠 Psixologik jihat bo'limini YOZMANG — TAQIQLANGAN
+  • Kirillcha matn
+
+JAVOB TUZILISHI (QATIY SHART):
+
+🤲 Kirish (2 jumla, neytral — ISM YOZMANG)
+   Tasvirlangan belgilar haqida hamdard tarzda ifodalang.
+
+🔍 Mumkin bo\'lgan sabablar
+   Ehtimoliy diniy sabablarni foiz bilan keltiring.
+   Masalan: "Sehr ta'siri — 60%, Ruhiy zo'riqish — 25%, Jin aziyati — 15%"
+   Hech qachon qat'iy hukm chiqarmang.
+
+🕌 Diniy nuqtai nazar (ASOSIY bo\'lim)
+   Qur'on oyati yoki hadis keltiring.
+   Diniy manbalarda qanday talqin qilinadi.
+
+✅ Amaliy tavsiyalar
+   Aniq, qisqa va bajarilishi oson tavsiyalar ro'yxati.
+   Oyat o'qish, zikr, namoz, roqiyga murojaat.
+
+🌟 Xulosa
+   DOIM quyidagi ikki tavsiya bilan tugating:
+   — Online ruqiyani tinglash tavsiya etiladi (11 kun, tong va kechqurun).
+   — Agar o'zgarish sezilmasa, shaxsiy offline ruqiya seansiga yozilish tavsiya etiladi.
+   Allohga tavakkal va umid bilan iliq xotima.`;
+
+async function runAnalysis(payload) {
+  const { uyqu_symptoms, ongi_symptoms, xonadon_symptoms, all_symptoms, complaint } = payload;
+
+  const parts = [];
+  if (uyqu_symptoms.length)    parts.push("Uyqudagi alomatlar: "    + uyqu_symptoms.join(", "));
+  if (ongi_symptoms.length)    parts.push("O'ngidagi alomatlar: "   + ongi_symptoms.join(", "));
+  if (xonadon_symptoms.length) parts.push("Xonadondagi alomatlar: " + xonadon_symptoms.join(", "));
+  const symptomsText = parts.length ? parts.join("\n") : "aniqlanmadi";
+
+  const userPrompt = `Foydalanuvchi quyidagi belgilarni belgiladi:\n${symptomsText}\n\nO'z holatini shunday tasvirladi:\n"${complaint}"\n\nUshbu ma'lumotlar asosida:\n1. Eng ehtimoliy ruhiy/ma'naviy muammoni aniqla va foizda bahoyla (masalan: Sehr ta'siri — 65%, Jin aziyati — 20%, Ruhiy zo'riqish — 15%)\n2. Har bir imkoniyat uchun qisqacha izoh ber\n3. Konkret davolash tavsiylari ber (zikrlar, amallar, ruqiya)\nJavobni o'zbek tilida, tushunarli va rahmli tarzda yoz.`;
+
+  const FALLBACK = `🤲 Tasvirlangan belgilar ruhiy va ma'naviy jihatdan e'tibor talab qiladi.\n\n🔍 Mumkin bo'lgan sabablar:\nBelgilangan alomatlar (${all_symptoms.length} ta) ruhiy va ma'naviy jihatdan ko'rib chiqilishi lozim.\n\n✅ Amaliy tavsiyalar:\n  - Oyatul-Kursiy, Falaq va Nos suralarini o'qing\n  - Namoz va zikrni muntazam ado eting\n  - Sabr va Allohga tavassal qiling\n\n🌟 Online ruqiyani 11 kun davomida tong va kechqurun tinglash tavsiya etiladi. Agar o'zgarish sezilmasa, shaxsiy offline ruqiya seansiga yozilishingiz mumkin. Alloh taolo shifo va baraka bersin.`;
+
+  // GROQ API kaliti — Railway GROQ_API_KEY dan olinadi
+  // Mini App da to'g'ridan-to'g'ri ishlatish uchun HTML da GROQ_KEY o'zgaruvchisi kerak
+  const groqKey = (typeof GROQ_API_KEY !== "undefined") ? GROQ_API_KEY : "";
+
+  if (!groqKey) {
+    console.warn("GROQ_API_KEY topilmadi — fallback javob");
+    sendToBot("analysis", payload);
+    return FALLBACK;
+  }
+
+  try {
+    const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + groqKey,
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        temperature: 0.25,
+        max_tokens: 1000,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user",   content: userPrompt },
+        ],
+      }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.text();
+      console.error("GROQ API xatolik:", resp.status, err);
+      throw new Error("GROQ error: " + resp.status);
+    }
+
+    const data = await resp.json();
+    const answer = data?.choices?.[0]?.message?.content || "";
+
+    // DB ga saqlash uchun botga yuborish
+    sendToBot("analysis", { ...payload, rag_answer: answer });
+    return answer || FALLBACK;
+
+  } catch (err) {
+    console.error("runAnalysis xatolik:", err);
+    sendToBot("analysis", payload);
+    return FALLBACK;
   }
 }
 
