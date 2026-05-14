@@ -571,3 +571,54 @@ body::before {
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── ЗИКР КАРТОЧКИ ───────────────────────────────────────────────────────── */
+.zikr-list { display:flex; flex-direction:column; gap:10px; }
+.zikr-card {
+  display:flex; align-items:center; gap:12px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:14px 16px;
+  cursor:pointer; transition:border-color .18s;
+  -webkit-tap-highlight-color:transparent;
+}
+.zikr-card:active { background:rgba(201,169,110,.08); }
+.zikr-icon  { font-size:1.6rem; flex-shrink:0; }
+.zikr-title { font-size:.9rem; font-weight:600; color:var(--tg-text); }
+.zikr-sub   { font-size:.76rem; color:var(--tg-hint); margin-top:2px; }
+.zikr-arrow { margin-left:auto; font-size:1.4rem; color:var(--gold-dim); }
+
+/* ── МА'ЛУМОТ КАРТОЧКИ ───────────────────────────────────────────────────── */
+.info-cards  { display:flex; flex-direction:column; gap:10px; }
+.info-card-btn {
+  display:flex; align-items:center; gap:12px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:14px 16px;
+  cursor:pointer; transition:border-color .18s;
+  -webkit-tap-highlight-color:transparent;
+}
+.info-card-btn:active { background:rgba(201,169,110,.08); }
+.ic-icon  { font-size:1.4rem; flex-shrink:0; }
+.ic-label { font-size:.9rem; font-weight:600; color:var(--tg-text); flex:1; }
+.ic-arrow { font-size:1.4rem; color:var(--gold-dim); }
+
+/* ── TAЪSIR TUGMALARI ─────────────────────────────────────────────────────── */
+.effect-btns { display:flex; flex-direction:column; gap:10px; }
+.effect-btn {
+  display:flex; align-items:center; gap:14px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:16px;
+  cursor:pointer; transition:border-color .18s, background .18s;
+  -webkit-tap-highlight-color:transparent;
+}
+.effect-btn:active, .effect-btn:hover { border-color:var(--gold); background:rgba(201,169,110,.08); }
+.effect-icon  { font-size:1.8rem; flex-shrink:0; }
+.effect-label { font-size:.92rem; font-weight:700; color:var(--tg-text); }
+.effect-sub   { font-size:.76rem; color:var(--tg-hint); margin-top:2px; }
+
+/* ── FIELD ERROR ─────────────────────────────────────────────────────────── */
+.field-error {
+  color:#e07050; font-size:.8rem; display:none; margin-top:6px;
+}
+
+/* ── MUTED TEXT ──────────────────────────────────────────────────────────── */
+.muted-text { font-size:.84rem; color:var(--tg-hint); line-height:1.6; }
