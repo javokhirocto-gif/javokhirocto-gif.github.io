@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   app.js — SHIFODUR Mini App  (to'liq qayta yozilgan)
+   app.js —  Mini App  (to'liq qayta yozilgan)
    HTML id-lari: s-menu, s-register, s-uyqu, s-ongi, s-xonadon,
                  s-complaint, s-loading, s-result, s-zikr, s-zikr-detail,
                  s-ruqiya-intro, s-ruqiya-listen, s-ruqiya-check,
@@ -175,19 +175,7 @@ Moʻljal: Yangi Qoʻyliq bozori, Food City koʻchasi
     map: true,
     lat: 41.3264, lon: 69.3728,
   },
-  ruqiya: {
-    title:"📌 Ruqiya nima?",
-    body:`Ruqiya — ogʻriq, sehr, koʻz tegishi kabi ofatga yoʻliqqan odamga oʻqib dam solinadigan duolar.
 
-✅ Shar'iy ruqiya shartlari:
-• Allohning kalomi bilan boʻlishi
-• Maʼnosi tushunarli boʻlishi
-• Faqat Allohning taqdiri bilan taʼsir qiladi
-
-❌ Shirkli ruqiya:
-Jinlar, malaikalar ismlari bilan duo — katta shirk.`,
-    map: false,
-  },
 };
 
 /* ── HOLAT ──────────────────────────────────────────────────────────────────── */
@@ -208,8 +196,7 @@ const state = {
 
 /* ── NAVIGATSIYA ────────────────────────────────────────────────────────────── */
 const PROGRESS_MAP = {
-  "s-menu":0,"s-register":10,"s-zikr":5,"s-zikr-detail":5,
-  "s-malumot":5,"s-malumot-detail":5,"s-savol":5,
+  "s-menu":0,"s-register":10,"s-malumot":5,"s-malumot-detail":5,"s-savol":5,
   "s-uyqu":20,"s-ongi":40,"s-xonadon":58,"s-complaint":72,
   "s-loading":77,"s-result":82,
   "s-ruqiya-intro":84,"s-ruqiya-listen":86,"s-ruqiya-check":88,
@@ -225,8 +212,6 @@ const BACK_MAP = {
   "s-xonadon":         "s-ongi",
   "s-complaint":       "s-xonadon",
   "s-result":          "s-menu",
-  "s-zikr":            "s-menu",
-  "s-zikr-detail":     "s-zikr",
   "s-ruqiya-intro":    "s-menu",
   "s-ruqiya-listen":   "s-ruqiya-intro",
   "s-ruqiya-check":    "s-ruqiya-intro",
@@ -263,6 +248,10 @@ function go(id) {
     else tg.BackButton.show();
   }
 
+  // Orqaga tugmasi
+  const backBar = document.getElementById("back-bar");
+  if (backBar) backBar.style.display = (id === "s-menu") ? "none" : "block";
+
   // Ekran ochilganda kerakli narsalarni render qilish
   if (id === "s-uyqu")            renderSymptoms("uyqu-list", UYQU_SYMPTOMS, state.uyqu_selected, "uyqu-count");
   if (id === "s-ongi")            renderSymptoms("ongi-list", ONGI_SYMPTOMS, state.ongi_selected, "ongi-count");
@@ -282,6 +271,14 @@ if (tg) {
     if (target) go(target);
   });
 }
+
+// Нативная кнопка "Orqaga" (HTML кнопка, работает и без Telegram)
+document.addEventListener("click", e => {
+  if (e.target.closest("#btn-back-native")) {
+    const target = BACK_MAP[currentScreen];
+    if (target) go(target);
+  }
+});
 
 /* ── YORDAMCHI ──────────────────────────────────────────────────────────────── */
 function el(id) { return document.getElementById(id); }
@@ -560,19 +557,7 @@ el("btn-complaint-submit")?.addEventListener("click", () => {
   setTimeout(() => go("s-result"), 3000);
 });
 
-/* ── ZIKR ────────────────────────────────────────────────────────────────────── */
-document.querySelectorAll(".zikr-card").forEach(card => {
-  card.addEventListener("click", () => {
-    const key = card.dataset.zikr;
-    const data = ZIKR_DATA[key];
-    if (!data) return;
-    const c = el("zikr-content");
-    if (c) c.innerHTML = `
-      <div class="result-title">${data.icon} ${data.title}</div>
-      <div class="result-body" style="white-space:pre-line">${data.body}</div>`;
-    go("s-zikr-detail");
-  });
-});
+/* ZIKR bo'limi olib tashlandi */
 
 /* ── RUQIYA ──────────────────────────────────────────────────────────────────── */
 el("btn-ruqiya-listen")?.addEventListener("click", () => go("s-ruqiya-listen"));
@@ -727,7 +712,77 @@ el("btn-close")?.addEventListener("click", () => { if (tg) tg.close(); });
 // data-goto bilan ishlaydi, lekin "s-uyqu" bosilganda register tekshiruvi kerak
 // Bu yuqoridagi universal listener orqali ishlaydi
 
+
+/* ── AUDIO PLAYER ─────────────────────────────────────────────────────────── */
+// AUDIO_URL — env dan yoki bot orqali berilgan URL
+// Bot admin audio faylini yuklaydi, URL ni env AUDIO_RUQIYA_URL da saqlanadi
+const AUDIO_URL = (typeof RUQIYA_AUDIO_URL !== "undefined") ? RUQIYA_AUDIO_URL : "";
+
+function initAudioPlayer() {
+  const audio     = document.getElementById("ruqiya-audio");
+  const playBtn   = document.getElementById("audio-play-btn");
+  const playIcon  = document.getElementById("audio-play-icon");
+  const pauseIcon = document.getElementById("audio-pause-icon");
+  const progress  = document.getElementById("audio-progress");
+  const timeEl    = document.getElementById("audio-time");
+  const noFile    = document.getElementById("audio-no-file");
+
+  if (!audio || !playBtn) return;
+
+  if (!AUDIO_URL) {
+    if (noFile) noFile.style.display = "block";
+    playBtn.style.opacity = "0.3";
+    playBtn.style.pointerEvents = "none";
+    return;
+  }
+
+  audio.src = AUDIO_URL;
+
+  function fmt(s) {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2,"0")}`;
+  }
+
+  audio.addEventListener("timeupdate", () => {
+    if (!audio.duration) return;
+    const pct = (audio.currentTime / audio.duration) * 100;
+    if (progress) progress.style.width = pct + "%";
+    if (timeEl)   timeEl.textContent = `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
+  });
+
+  audio.addEventListener("ended", () => {
+    playIcon.style.display  = "";
+    pauseIcon.style.display = "none";
+    if (progress) progress.style.width = "0%";
+  });
+
+  playBtn.addEventListener("click", () => {
+    if (audio.paused) {
+      audio.play();
+      playIcon.style.display  = "none";
+      pauseIcon.style.display = "";
+    } else {
+      audio.pause();
+      playIcon.style.display  = "";
+      pauseIcon.style.display = "none";
+    }
+  });
+
+  // Progress bar click — seek
+  const bar = document.querySelector(".audio-progress-bar");
+  if (bar) {
+    bar.addEventListener("click", e => {
+      if (!audio.duration) return;
+      const rect = bar.getBoundingClientRect();
+      const pct  = (e.clientX - rect.left) / rect.width;
+      audio.currentTime = pct * audio.duration;
+    });
+  }
+}
+
 /* ── BOSHLASH ────────────────────────────────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", () => {
   go("s-menu");
+  initAudioPlayer();
 });
