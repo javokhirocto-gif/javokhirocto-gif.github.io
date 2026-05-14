@@ -185,50 +185,7 @@
     <button class="btn btn-secondary" data-goto="s-offline">📅 Shaxsan tashrif yozilish</button>
   </div>
 
-  <!-- ══ SCREEN: ZIKRLAR ══ -->
-  <div id="s-zikr" class="screen">
-    <div class="section-header">
-      <span class="section-emoji">🎧</span>
-      <h2 class="section-title">Bepul zikrlar</h2>
-      <p class="section-sub">Turni tanlang</p>
-    </div>
-    <div class="zikr-list">
-      <div class="zikr-card" data-zikr="uyqu">
-        <span class="zikr-icon">😴</span>
-        <div><div class="zikr-title">Uyqu uchun zikrlar</div><div class="zikr-sub">Uyqusizlik, tush koʻrish</div></div>
-        <span class="zikr-arrow">›</span>
-      </div>
-      <div class="zikr-card" data-zikr="bezovtalik">
-        <span class="zikr-icon">😟</span>
-        <div><div class="zikr-title">Bezovtalik uchun</div><div class="zikr-sub">Ruhiy siqilish, qoʻrquv</div></div>
-        <span class="zikr-arrow">›</span>
-      </div>
-      <div class="zikr-card" data-zikr="vasvasa">
-        <span class="zikr-icon">🌀</span>
-        <div><div class="zikr-title">Vas-vasa uchun</div><div class="zikr-sub">Yomon fikrlar, shubha</div></div>
-        <span class="zikr-arrow">›</span>
-      </div>
-      <div class="zikr-card" data-zikr="umumiy">
-        <span class="zikr-icon">📿</span>
-        <div><div class="zikr-title">Umumiy ruqiya</div><div class="zikr-sub">Kundalik himoya</div></div>
-        <span class="zikr-arrow">›</span>
-      </div>
-      <div class="zikr-card" data-zikr="kunlik">
-        <span class="zikr-icon">☀️</span>
-        <div><div class="zikr-title">Kunlik zikrlar</div><div class="zikr-sub">Ertalab va kechqurun</div></div>
-        <span class="zikr-arrow">›</span>
-      </div>
-    </div>
-  </div>
 
-  <!-- ══ SCREEN: ZIKR DETAIL ══ -->
-  <div id="s-zikr-detail" class="screen">
-    <div class="result-card" id="zikr-content"></div>
-    <div class="bottom-nav">
-      <button class="btn btn-secondary" data-goto="s-zikr">🔙 Orqaga</button>
-      <button class="btn btn-primary" data-goto="s-ruqiya-intro" style="margin-top:8px">🧕 Onlayn ruqiya →</button>
-    </div>
-  </div>
 
   <!-- ══ SCREEN: RUQIYA INTRO ══ -->
   <div id="s-ruqiya-intro" class="screen">
@@ -463,6 +420,19 @@
   </div>
 
 </div>
+<script>
+  // ── AUDIO ──────────────────────────────────────────────────────────────────
+  // Google Drive fayl ID dan to'g'ridan-to'g'ri eshitish uchun
+  const RUQIYA_AUDIO_URL = "https://drive.google.com/uc?export=download&id=1ejYibKBvkurohRF5GZ99NL6j-cpPJLVj";
+
+  // ── GROQ API ───────────────────────────────────────────────────────────────
+  // Railway Variables -> GROQ_API_KEY qiymatini shu yerga qo'ying
+  // MUHIM: bu faqat frontend uchun — production da backend proxy orqali qiling
+  // Hozircha test uchun to'g'ridan-to'g'ri ishlatiladi
+  const GROQ_API_KEY = "%%GROQ_API_KEY%%";
+  // ^^^ Deploy qilganda Railway da GROQ_API_KEY ni o'rnating va
+  //     build script bu qatorni avtomatik almashtiradi (quyida ko'rsatilgan)
+</script>
 <script src="app.js"></script>
 </body>
 </html>
