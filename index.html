@@ -3,17 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>SHIFODUR</title>
+  <title>TIB VA DAM</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="app">
 
+  <!-- BACK BAR -->
+  <div id="back-bar" style="display:none">
+    <button id="btn-back-native" class="btn-back">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Orqaga
+    </button>
+  </div>
+
   <!-- HEADER -->
   <div class="app-header">
-    <div class="app-logo">Shifo<span>dur</span></div>
-    <div class="app-tagline">Ruqiya & Ruhiy holat platformasi</div>
+    <div class="app-logo">TIB <span>VA DAM</span></div>
+    <div class="app-tagline">Ruhiy holatni aniqlash platformasi</div>
   </div>
   <div style="padding:0 16px 4px">
     <div class="progress-wrap">
@@ -24,13 +34,9 @@
 
   <!-- ══ SCREEN: MENU ══ -->
   <div id="s-menu" class="screen">
-    <div class="bismillah">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</div>
     <div class="menu-grid">
       <div class="menu-card" data-goto="s-uyqu" data-action="analysis">
         <span class="mc-icon">🧠</span><span class="mc-label">Holatimni aniqlash</span>
-      </div>
-      <div class="menu-card" data-goto="s-zikr">
-        <span class="mc-icon">🎧</span><span class="mc-label">Bepul zikrlar</span>
       </div>
       <div class="menu-card" data-goto="s-ruqiya-intro">
         <span class="mc-icon">🧕</span><span class="mc-label">Onlayn ruqiya</span>
@@ -257,7 +263,33 @@
     </div>
     <div class="info-box">
       11 kun davomida tong va kechqurun tinglang.<br>
-      Audio faylni botdan yoki menejerdan olishingiz mumkin.
+      Quloqchin taqib, koʻzni yumib, xotirjam holda eshiting.
+    </div>
+    <div class="audio-player-wrap" id="audio-wrap">
+      <div class="audio-player">
+        <button class="audio-play-btn" id="audio-play-btn">
+          <svg id="audio-play-icon" width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <circle cx="14" cy="14" r="13" stroke="var(--gold)" stroke-width="1.5"/>
+            <path d="M11 9.5L20 14L11 18.5V9.5Z" fill="var(--gold)"/>
+          </svg>
+          <svg id="audio-pause-icon" width="28" height="28" viewBox="0 0 28 28" fill="none" style="display:none">
+            <circle cx="14" cy="14" r="13" stroke="var(--gold)" stroke-width="1.5"/>
+            <rect x="9" y="9" width="3.5" height="10" rx="1" fill="var(--gold)"/>
+            <rect x="15.5" y="9" width="3.5" height="10" rx="1" fill="var(--gold)"/>
+          </svg>
+        </button>
+        <div class="audio-info">
+          <div class="audio-title">Ruqiya audiosi</div>
+          <div class="audio-progress-wrap">
+            <div class="audio-progress-bar"><div class="audio-progress-fill" id="audio-progress"></div></div>
+            <span class="audio-time" id="audio-time">0:00 / 0:00</span>
+          </div>
+        </div>
+      </div>
+      <audio id="ruqiya-audio" preload="none"></audio>
+      <p class="muted-text" id="audio-no-file" style="text-align:center;margin-top:8px;display:none">
+        Audio fayl hozircha yuklanmagan. Menejerdan soʻrang: @manager_username
+      </p>
     </div>
     <div class="card">
       <div class="card-title"><span class="icon">⚠️</span> Tinglash paytida kuzatilishi mumkin</div>
@@ -382,9 +414,6 @@
       </div>
       <div class="info-card-btn" data-info="manzil">
         <span class="ic-icon">📍</span><span class="ic-label">Manzil va xarita</span><span class="ic-arrow">›</span>
-      </div>
-      <div class="info-card-btn" data-info="ruqiya">
-        <span class="ic-icon">📌</span><span class="ic-label">Ruqiya nima?</span><span class="ic-arrow">›</span>
       </div>
     </div>
   </div>
