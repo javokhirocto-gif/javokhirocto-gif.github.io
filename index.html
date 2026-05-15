@@ -255,6 +255,7 @@
     </div>
     <button class="btn btn-primary" data-goto="s-reaction-words">📊 Tingladim — reaktsiya belgilash</button>
     <button class="btn btn-secondary" id="btn-ruqiya-check">✅ 11 kun tugadi</button>
+    <button class="btn btn-ghost" data-goto="s-history">📈 Seanslar tarixi</button>
   </div>
 
   <!-- ══ SCREEN: 11 KUN TEKSHIRISH ══ -->
@@ -418,6 +419,46 @@
       <button class="btn btn-ghost" id="btn-close">Ilovani yopish</button>
     </div>
   </div>
+
+  <!-- ══ SCREEN: SEANS TUGADI — ALOMATLARNI BELGILASH ══ -->
+  <div id="s-after-listen" class="screen">
+    <div class="section-header">
+      <span class="section-emoji">✨</span>
+      <h2 class="section-title">Seans tugadi</h2>
+      <p class="section-sub" id="after-listen-sub">1-seans • Qaysi alomatlar yaxshilandi yoki yoʻqoldi?</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📊</span> Seans statistikasi</div>
+      <div id="session-stats" class="track-stat-wrap"></div>
+    </div>
+
+    <div class="info-box" style="margin-bottom:14px">
+      ✅ Yaxshilangan yoki yoʻqolgan alomatlarni belgilang
+    </div>
+
+    <div class="sel-count" id="after-resolved-count">Hech narsa belgilanmadi</div>
+    <div class="symptom-list" id="after-symptom-list"></div>
+
+    <div class="bottom-nav">
+      <div class="nav-hint">Oʻzgarish boʻlmasa ham davom etish mumkin</div>
+      <button class="btn btn-primary" id="btn-after-save">💾 Saqlash va davom etish</button>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN: TARIX — BARCHA SEANSLAR ══ -->
+  <div id="s-history" class="screen">
+    <div class="section-header">
+      <span class="section-emoji">📈</span>
+      <h2 class="section-title">Seanslar tarixi</h2>
+      <p class="section-sub">Har bir seans natijasi</p>
+    </div>
+    <div id="history-list"></div>
+    <div class="bottom-nav">
+      <button class="btn btn-primary" data-goto="s-ruqiya-listen">🎧 Yangi seans</button>
+    </div>
+  </div>
+
 
 </div>
 <script>
