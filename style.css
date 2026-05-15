@@ -704,3 +704,116 @@ body::before {
   color: var(--tg-hint);
   white-space: nowrap;
 }
+
+/* ── SEANSLAR TARIXI ─────────────────────────────────────────────────────── */
+.track-stat-wrap { display:flex; flex-direction:column; }
+
+.history-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.history-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px; height: 100%;
+  background: var(--gold);
+  border-radius: 2px 0 0 2px;
+}
+.history-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.history-session-num {
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.history-date {
+  font-size: .72rem;
+  color: var(--tg-hint);
+}
+.history-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.history-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.history-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--emerald), var(--emerald-light));
+  transition: width .4s ease;
+}
+.history-progress-label {
+  font-size: .75rem;
+  color: var(--emerald-light);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.history-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+.history-tag-resolved {
+  background: rgba(82,183,136,.12);
+  border: 1px solid rgba(82,183,136,.3);
+  border-radius: 20px;
+  padding: 2px 9px;
+  font-size: .72rem;
+  color: var(--emerald-light);
+}
+.history-tag-remaining {
+  background: rgba(193,68,14,.08);
+  border: 1px solid rgba(193,68,14,.2);
+  border-radius: 20px;
+  padding: 2px 9px;
+  font-size: .72rem;
+  color: #e07050;
+}
+.history-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--tg-hint);
+  font-size: .88rem;
+}
+
+/* ── OVERALL PROGRESS CARD ───────────────────────────────────────────────── */
+.overall-progress-card {
+  background: linear-gradient(135deg, rgba(45,106,79,.2), rgba(82,183,136,.1));
+  border: 1px solid rgba(82,183,136,.25);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+  text-align: center;
+}
+.overall-big-num {
+  font-family: var(--font-display);
+  font-size: 2.8rem;
+  color: var(--emerald-light);
+  font-weight: 700;
+  line-height: 1;
+}
+.overall-label {
+  font-size: .8rem;
+  color: var(--tg-hint);
+  margin-top: 4px;
+}
