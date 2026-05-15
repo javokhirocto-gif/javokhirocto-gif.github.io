@@ -42,7 +42,14 @@ async function apiFetch(path, method = "GET", body = null) {
   if (body) opts.body = JSON.stringify(body);
 
   try {
+    // 12 soniya timeout
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    opts.signal = controller.signal;
+
     const resp = await fetch(API_BASE + path, opts);
+    clearTimeout(timer);
+
     if (!resp.ok) {
       const errText = await resp.text().catch(() => "");
       console.error(`API xatolik [${resp.status}] ${path}:`, errText);
@@ -50,7 +57,11 @@ async function apiFetch(path, method = "GET", body = null) {
     }
     return await resp.json();
   } catch(e) {
-    console.error(`apiFetch [${method}] ${path} xatolik:`, e.message);
+    if (e.name === "AbortError") {
+      console.error(`apiFetch timeout: ${path}`);
+    } else {
+      console.error(`apiFetch [${method}] ${path} xatolik:`, e.message);
+    }
     return null;
   }
 }
@@ -643,6 +654,21 @@ el("btn-complaint-submit")?.addEventListener("click", () => {
   state.all_labels = getAllLabels();
   go("s-loading");
 
+  // Loading matnini animatsiya qilish
+  const loadingMsgs = [
+    ["Tahlil qilinmoqda...",    "Biroz sabr qiling"],
+    ["Ma'lumotlar tayyorlanmoqda...", "10-15 soniya ketishi mumkin"],
+    ["Javob shakllantirilmoqda...", "Deyarli tayyor..."],
+  ];
+  let msgIdx = 0;
+  const loadingInterval = setInterval(() => {
+    msgIdx = (msgIdx + 1) % loadingMsgs.length;
+    const lt = document.getElementById("loading-text");
+    const ls = document.getElementById("loading-sub");
+    if (lt) lt.textContent = loadingMsgs[msgIdx][0];
+    if (ls) ls.textContent = loadingMsgs[msgIdx][1];
+  }, 4000);
+
   const analysisPayload = {
     uyqu_symptoms:    getLabels(UYQU_SYMPTOMS,    state.uyqu_selected),
     ongi_symptoms:    getLabels(ONGI_SYMPTOMS,    state.ongi_selected),
@@ -653,7 +679,12 @@ el("btn-complaint-submit")?.addEventListener("click", () => {
 
   // Anthropic API orqali tahlil olish (bot kabi)
   runAnalysis(analysisPayload).then(answer => {
+    clearInterval(loadingInterval);
     state.rag_answer = answer;
+    go("s-result");
+  }).catch(() => {
+    clearInterval(loadingInterval);
+    state.rag_answer = "";
     go("s-result");
   });
 });
@@ -911,13 +942,26 @@ Belgilangan alomatlar (${all_symptoms.length} ta) ruhiy va maʼnaviy jihatdan ko
 Agar oʻzgarish sezilmasa, shaxsiy offline ruqiya seansiga yozilishingiz mumkin.
 Alloh taolo shifo va baraka bersin.`;
 
+  // API_BASE sozlanmagan — darhol FALLBACK
+  if (!API_BASE || API_BASE === "SHU_YERGA_RAILWAY_URL_QOYING") {
+    console.warn("API_BASE_URL sozlanmagan — FALLBACK ishlatiladi");
+    return FALLBACK;
+  }
+
+  // 15 soniya timeout — API javob bermasa FALLBACK
+  const timeoutPromise = new Promise(resolve =>
+    setTimeout(() => resolve(null), 15000)
+  );
+
   try {
-    // GROQ Railway serverda — kalit frontendga chiqmaydi
-    const res = await apiFetch("/api/analyze", "POST", payload);
+    const fetchPromise = apiFetch("/api/analyze", "POST", payload);
+    const res = await Promise.race([fetchPromise, timeoutPromise]);
+
     if (res?.ok && res.answer) {
       if (res.analysis_id) state.analysis_id = res.analysis_id;
       return res.answer;
     }
+    console.warn("API javob bermadi yoki xatolik — FALLBACK");
     return FALLBACK;
   } catch(e) {
     console.error("runAnalysis xatolik:", e);
