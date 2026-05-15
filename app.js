@@ -185,14 +185,39 @@ const state = {
   ongi_selected:    new Set(),
   xonadon_selected: new Set(),
   complaint:        "",
-  all_labels:       [],
+  all_labels:       [],         // dastlabki tanlangan barcha alomatlar
+  remaining_labels: [],         // hali yoʻqolmagan alomatlar
   rw_selected:      new Set(),
   ds_selected:      new Set(),
   tr_resolved:      new Set(),
   offline_date:     "",
   offline_time:     "",
   prev_screen:      "s-menu",
+  // Audio seans kuzatuvi
+  session_num:      0,          // necha marta tinglandi
+  after_resolved:   new Set(),  // bu seansda yaxshilangan alomatlar indekslari
 };
+
+/* ── LOCAL STORAGE — SEANSLAR TARIXI ──────────────────────────────────────── */
+// Barcha seanslarni brauzerda saqlaymiz, botga ham yuboramiz
+function loadSessions() {
+  try {
+    const raw = localStorage.getItem("ruqiya_sessions");
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveSessions(sessions) {
+  try { localStorage.setItem("ruqiya_sessions", JSON.stringify(sessions)); }
+  catch(e) { console.warn("localStorage xatolik:", e); }
+}
+
+function addSession(sessionData) {
+  const sessions = loadSessions();
+  sessions.push(sessionData);
+  saveSessions(sessions);
+  return sessions;
+}
 
 /* ── NAVIGATSIYA ────────────────────────────────────────────────────────────── */
 const PROGRESS_MAP = {
@@ -201,7 +226,7 @@ const PROGRESS_MAP = {
   "s-loading":77,"s-result":82,
   "s-ruqiya-intro":84,"s-ruqiya-listen":86,"s-ruqiya-check":88,
   "s-reaction-words":90,"s-during-symptoms":94,
-  "s-tracking":95,"s-offline":95,"s-final":100,
+  "s-tracking":95,"s-offline":95,"s-after-listen":97,"s-history":60,"s-final":100,
 };
 
 // Back map: bu ekranda geri tugma bosila qayerga borish kerak
@@ -219,6 +244,8 @@ const BACK_MAP = {
   "s-during-symptoms": "s-reaction-words",
   "s-tracking":        "s-menu",
   "s-offline":         "s-menu",
+  "s-after-listen":    "s-ruqiya-listen",
+  "s-history":         "s-ruqiya-listen",
   "s-malumot":         "s-menu",
   "s-malumot-detail":  "s-malumot",
   "s-savol":           "s-menu",
@@ -261,6 +288,8 @@ function go(id) {
   if (id === "s-reaction-words")  renderChips("rw-grid", REACTION_WORDS, state.rw_selected, "word-chip", "rw-count");
   if (id === "s-during-symptoms") renderChips("ds-grid", DURING_SYMPTOMS, state.ds_selected, "chip", "ds-count");
   if (id === "s-tracking")        renderTracking();
+  if (id === "s-after-listen")    renderAfterListen();
+  if (id === "s-history")         renderHistory();
   if (id === "s-offline")         renderOffline();
 }
 
@@ -764,6 +793,9 @@ function initAudioPlayer() {
     playIcon.style.display  = "";
     pauseIcon.style.display = "none";
     if (progress) progress.style.width = "0%";
+
+    // Seans tugadi — alomatlar tanlov ekraniga o'tamiz
+    onAudioEnded();
   });
 
   playBtn.addEventListener("click", () => {
@@ -892,6 +924,233 @@ async function runAnalysis(payload) {
     return FALLBACK;
   }
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   AUDIO SEANS KUZATUVI
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+// Audio tugaganda chaqiriladi
+function onAudioEnded() {
+  state.session_num += 1;
+  state.after_resolved = new Set();
+
+  // remaining_labels — hali yoʻqolmagan alomatlar
+  // Birinchi seans: barcha dastlabki alomatlar
+  if (state.remaining_labels.length === 0) {
+    state.remaining_labels = [...(state.all_labels.length ? state.all_labels : getAllLabels())];
+  }
+
+  go("s-after-listen");
+}
+
+// Render: seans tugagandan keyin alomatlar tanlovi
+function renderAfterListen() {
+  const sessionNum = state.session_num;
+  const remaining  = state.remaining_labels;
+
+  // Sarlavhani yangilash
+  const sub = el("after-listen-sub");
+  if (sub) sub.textContent = `${sessionNum}-seans • Qaysi alomatlar yaxshilandi yoki yoʻqoldi?`;
+
+  // Statistika
+  const stats = el("session-stats");
+  const total  = state.all_labels.length || getAllLabels().length;
+  const sessions = loadSessions();
+  const totalResolved = sessions.reduce((acc, s) => acc + (s.resolved?.length || 0), 0);
+  const uniqueResolved = new Set(sessions.flatMap(s => s.resolved || [])).size;
+
+  if (stats) stats.innerHTML = `
+    <div class="track-stat">
+      <span class="track-stat-label">Jami seans</span>
+      <span class="track-stat-val">${sessionNum}</span>
+    </div>
+    <div class="track-stat">
+      <span class="track-stat-label">Dastlabki alomatlar</span>
+      <span class="track-stat-val">${total}</span>
+    </div>
+    <div class="track-stat">
+      <span class="track-stat-label">Hozircha yoʻqolgan</span>
+      <span class="track-stat-val track-resolved">${uniqueResolved}</span>
+    </div>
+    <div class="track-stat">
+      <span class="track-stat-label">Qolgan</span>
+      <span class="track-stat-val track-remaining">${remaining.length}</span>
+    </div>`;
+
+  // Alomatlar ro'yxati — faqat hali qolganlar
+  state.after_resolved = new Set();
+  const container = el("after-symptom-list");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const countEl = el("after-resolved-count");
+
+  function updCount() {
+    if (countEl) countEl.textContent = state.after_resolved.size
+      ? `${state.after_resolved.size} ta yaxshilandi`
+      : "Hech narsa belgilanmadi";
+  }
+
+  if (!remaining.length) {
+    container.innerHTML = `<div class="info-box" style="background:rgba(82,183,136,.15);border-color:rgba(82,183,136,.3);color:var(--emerald-light)">
+      🎉 Barcha alomatlar yoʻqoldi! Allohga shukr!</div>`;
+    updCount();
+    return;
+  }
+
+  remaining.forEach((sym, i) => {
+    const item = document.createElement("div");
+    item.className = "symptom-item";
+    item.innerHTML = `
+      <span class="sym-box">
+        <svg class="sym-check" viewBox="0 0 10 10" fill="none">
+          <polyline points="1.5,5.5 4,8 8.5,2" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="sym-label">${sym}</span>`;
+    item.addEventListener("click", () => {
+      if (state.after_resolved.has(i)) {
+        state.after_resolved.delete(i);
+        item.classList.remove("checked");
+      } else {
+        state.after_resolved.add(i);
+        item.classList.add("checked");
+      }
+      updCount();
+    });
+    container.appendChild(item);
+  });
+  updCount();
+}
+
+// Render: seanslar tarixi
+function renderHistory() {
+  const container = el("history-list");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const sessions  = loadSessions();
+  const total     = state.all_labels.length || getAllLabels().length;
+
+  if (!sessions.length) {
+    container.innerHTML = `<div class="history-empty">
+      Hali hech qanday seans boʻlmagan.<br>Ruqiyani tinglashni boshlang 🎧</div>`;
+    return;
+  }
+
+  // Umumiy progress
+  const allResolved = new Set(sessions.flatMap(s => s.resolved || []));
+  const pct = total > 0 ? Math.round((allResolved.size / total) * 100) : 0;
+  container.innerHTML = `
+    <div class="overall-progress-card">
+      <div class="overall-big-num">${pct}%</div>
+      <div class="overall-label">Umumiy yaxshilanish • ${allResolved.size} ta alomat yoʻqoldi</div>
+      <div class="progress-bar" style="margin-top:10px">
+        <div class="progress-fill" style="width:${pct}%"></div>
+      </div>
+    </div>`;
+
+  // Har bir seans kartasi — oxiridan boshi
+  [...sessions].reverse().forEach((s, idx) => {
+    const num      = sessions.length - idx;
+    const resolved = s.resolved || [];
+    const rem      = s.remaining || [];
+    const date     = s.date ? new Date(s.date).toLocaleDateString("ru-RU",
+      { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "—";
+    const sPct     = total > 0 ? Math.round((resolved.length / total) * 100) : 0;
+
+    const card = document.createElement("div");
+    card.className = "history-card";
+    card.innerHTML = `
+      <div class="history-card-header">
+        <span class="history-session-num">🎧 ${num}-seans</span>
+        <span class="history-date">${date}</span>
+      </div>
+      <div class="history-progress">
+        <div class="history-progress-bar">
+          <div class="history-progress-fill" style="width:${sPct}%"></div>
+        </div>
+        <span class="history-progress-label">+${resolved.length} yoʻqoldi</span>
+      </div>
+      ${resolved.length ? `
+        <div style="font-size:.72rem;color:var(--tg-hint);margin-bottom:4px">✅ Yaxshilandi:</div>
+        <div class="history-tags">${resolved.map(r =>
+          `<span class="history-tag-resolved">${r}</span>`).join("")}</div>` : ""}
+      ${rem.length ? `
+        <div style="font-size:.72rem;color:var(--tg-hint);margin:6px 0 4px">🔴 Qolgan:</div>
+        <div class="history-tags">${rem.slice(0,5).map(r =>
+          `<span class="history-tag-remaining">${r}</span>`).join("")}
+          ${rem.length > 5 ? `<span class="history-tag-remaining">+${rem.length-5} ta</span>` : ""}
+        </div>` : `<div class="info-box" style="margin-top:8px;padding:8px 12px;font-size:.8rem">
+          🎉 Shu seansda barcha alomatlar yoʻqoldi!</div>`}`;
+    container.appendChild(card);
+  });
+}
+
+// "Saqlash" tugmasi — seans natijasini saqlash
+el("btn-after-save")?.addEventListener("click", () => {
+  const remaining = state.remaining_labels;
+  const resolvedIdxs = [...state.after_resolved];
+  const resolvedLabels   = resolvedIdxs.map(i => remaining[i]).filter(Boolean);
+  const remainingLabels  = remaining.filter((_, i) => !state.after_resolved.has(i));
+
+  // remaining ni yangilash — keyingi seans uchun
+  state.remaining_labels = remainingLabels;
+
+  const sessionData = {
+    session_num: state.session_num,
+    date:        new Date().toISOString(),
+    resolved:    resolvedLabels,
+    remaining:   remainingLabels,
+    total:       state.all_labels.length || getAllLabels().length,
+  };
+
+  // LocalStorage ga saqlash
+  addSession(sessionData);
+
+  // Botga yuborish — DB ga yoziladi
+  sendToBot("symptom_tracking", {
+    tracking_type:      "online",
+    session_num:        state.session_num,
+    resolved_symptoms:  resolvedLabels,
+    remaining_symptoms: remainingLabels,
+    overall_status:     remainingLabels.length === 0 ? "better" :
+                        resolvedLabels.length > 0    ? "better" : "same",
+  });
+
+  const allGone = remainingLabels.length === 0;
+
+  if (allGone) {
+    showFinal({
+      icon:  "🎉",
+      title: "Barcha alomatlar yoʻqoldi!",
+      body:  "Allohga shukr! Siz " + state.session_num + " seans tingladi va barcha alomatlar yoʻqoldi.\n\nAlloh taolo Sizi Oʻz rahmatida asrasin! 🤲",
+      extra: `<button class="btn btn-secondary" onclick="go('s-history')" style="margin-top:12px">📈 Tarixni koʻrish</button>`,
+    });
+  } else if (resolvedLabels.length > 0) {
+    showFinal({
+      icon:  "📈",
+      title: state.session_num + "-seans saqlandi!",
+      body:  `✅ ${resolvedLabels.length} ta alomat yaxshilandi\n🔴 ${remainingLabels.length} ta alomat qoldi\n\nRuqiyani tinglashni davom eting. Alloh shifo bersin! 🤲`,
+      extra: `
+        <div style="margin-bottom:10px">
+          <div class="card-title" style="font-size:.72rem;color:var(--gold);margin-bottom:6px">✅ YAXSHILANGAN</div>
+          <div class="sym-summary">${resolvedLabels.map(r => `<span class="sym-tag">${r}</span>`).join("") || "—"}</div>
+        </div>
+        <button class="btn btn-primary" onclick="go('s-ruqiya-listen')" style="margin-top:12px">🎧 Keyingi seans</button>
+        <button class="btn btn-secondary" onclick="go('s-history')" style="margin-top:8px">📈 Tarixni koʻrish</button>`,
+    });
+  } else {
+    showFinal({
+      icon:  "⏳",
+      title: state.session_num + "-seans saqlandi",
+      body:  "Bu seansda oʻzgarish sezilmadi. Davom eting — ruqiya vaqt talab qiladi.\n\nAlloh shifo bersin! 🤲",
+      extra: `<button class="btn btn-primary" onclick="go('s-ruqiya-listen')" style="margin-top:12px">🎧 Keyingi seans</button>`,
+    });
+  }
+});
 
 /* ── BOSHLASH ────────────────────────────────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", () => {
