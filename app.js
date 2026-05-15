@@ -12,10 +12,47 @@
 const tg = window.Telegram?.WebApp || null;
 if (tg) { tg.ready(); tg.expand(); tg.enableClosingConfirmation(); }
 
+// ── API CONFIG ──────────────────────────────────────────────────────────────
+// Railway API URL — HTML da API_BASE_URL o'zgaruvchisi orqali beriladi
+const API_BASE = (typeof API_BASE_URL !== "undefined") ? API_BASE_URL : "";
+
+// initData — Telegram dan keladi (foydalanuvchi kimligini tasdiqlaydi)
+function getInitData() {
+  return tg?.initData || "";
+}
+
+// Asosiy API chaqiruv funksiyasi
+async function apiFetch(path, method = "GET", body = null) {
+  if (!API_BASE) {
+    console.warn("API_BASE_URL aniqlanmagan");
+    return null;
+  }
+  const opts = {
+    method,
+    headers: {
+      "Content-Type":  "application/json",
+      "X-Init-Data":   getInitData(),
+    },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  try {
+    const resp = await fetch(API_BASE + path, opts);
+    if (!resp.ok) {
+      console.error("API xatolik:", resp.status, path);
+      return null;
+    }
+    return await resp.json();
+  } catch(e) {
+    console.error("apiFetch xatolik:", path, e);
+    return null;
+  }
+}
+
+// Eski sendToBot — faqat fallback sifatida saqlanadi
 function sendToBot(action, payload = {}) {
   const data = JSON.stringify({ action, ...payload });
   if (tg) tg.sendData(data);
-  else console.log('[sendData]', data);
+  else console.log("[sendData fallback]", data);
 }
 
 /* ── MA'LUMOTLAR ───────────────────────────────────────────────────────────── */
@@ -193,6 +230,10 @@ const state = {
   offline_date:     "",
   offline_time:     "",
   prev_screen:      "s-menu",
+  // Server bilan sinxronizatsiya
+  tg_id:              null,   // Telegram user ID
+  analysis_id:        null,   // oxirgi tahlil ID (DB dan)
+  ruqiya_session_id:  null,   // joriy sessiya ID (DB dan)
   // Audio seans kuzatuvi
   session_num:      0,          // necha marta tinglandi
   after_resolved:   new Set(),  // bu seansda yaxshilangan alomatlar indekslari
@@ -565,9 +606,19 @@ el("btn-reg-submit")?.addEventListener("click", () => {
   if (!region) return showFieldError("reg-error", "Viloyatni kiriting");
   if (!phone)  return showFieldError("reg-error", "Telefon raqamini kiriting");
 
-  state.registered = true;
-  sendToBot("register", { full_name:name, age:+age, region, phone });
-  go("s-uyqu");
+  // API orqali saqlash
+  apiFetch("/api/register", "POST", {
+    full_name: name, age: +age, region, phone,
+  }).then(res => {
+    if (res?.ok) {
+      state.registered  = true;
+      state.tg_id       = res.user?.telegram_id;
+      state.analysis_id = null;
+      go("s-uyqu");
+    } else {
+      showFieldError("reg-error", "Saqlashda xatolik, qayta urinib ko'ring");
+    }
+  });
 });
 
 /* ── COMPLAINT ───────────────────────────────────────────────────────────────── */
@@ -635,9 +686,14 @@ el("btn-ds-save")?.addEventListener("click", () => {
   const rwLabels = getLabels(REACTION_WORDS,  state.rw_selected);
   const dsLabels = getLabels(DURING_SYMPTOMS, state.ds_selected);
 
-  sendToBot("ruqiya_reaction", {
+  // API orqali sessiya saqlash
+  apiFetch("/api/session", "POST", {
+    analysis_id:     state.analysis_id || null,
+    session_type:    "online",
     reaction_words:  rwLabels,
     during_symptoms: dsLabels,
+  }).then(r => {
+    if (r?.ok) state.ruqiya_session_id = r.session_id;
   });
 
   const note = (rwLabels.length || dsLabels.length)
@@ -662,11 +718,12 @@ el("btn-track-save")?.addEventListener("click", () => {
   const remaining = all.filter((_, i) => !state.tr_resolved.has(i));
   const status    = !remaining.length || resolved.length > remaining.length ? "better" : "same";
 
-  sendToBot("symptom_tracking", {
+  apiFetch("/api/tracking", "POST", {
     tracking_type:      "online",
     resolved_symptoms:  resolved,
     remaining_symptoms: remaining,
     overall_status:     status,
+    analysis_id:        state.analysis_id || null,
   });
 
   showFinal({
@@ -693,9 +750,10 @@ el("btn-offline-confirm")?.addEventListener("click", () => {
   if (!state.offline_date) return showFieldError("offline-error", "Sanani tanlang");
   if (!state.offline_time) return showFieldError("offline-error", "Vaqtni tanlang");
 
-  sendToBot("offline_visit", {
-    visit_date: state.offline_date,
-    visit_time: state.offline_time,
+  apiFetch("/api/offline", "POST", {
+    visit_date:  state.offline_date,
+    visit_time:  state.offline_time,
+    analysis_id: state.analysis_id || null,
   });
 
   showFinal({
@@ -734,7 +792,7 @@ document.querySelectorAll(".info-card-btn").forEach(btn => {
 el("btn-savol-submit")?.addEventListener("click", () => {
   const txt = el("savol-text")?.value.trim();
   if (!txt || txt.length < 5) return showFieldError("savol-error", "Savolingizni kiriting");
-  sendToBot("savol", { question: txt });
+  apiFetch("/api/savol", "POST", { question: txt });
   el("savol-text").value = "";
   showFinal({
     icon:"📨",
@@ -914,13 +972,19 @@ async function runAnalysis(payload) {
     const data = await resp.json();
     const answer = data?.choices?.[0]?.message?.content || "";
 
-    // DB ga saqlash uchun botga yuborish
-    sendToBot("analysis", { ...payload, rag_answer: answer });
+    // API orqali DB ga saqlash
+    const saved = await apiFetch("/api/analysis", "POST", {
+      ...payload, rag_answer: answer,
+    });
+    if (saved?.ok) state.analysis_id = saved.analysis_id;
     return answer || FALLBACK;
 
   } catch (err) {
     console.error("runAnalysis xatolik:", err);
-    sendToBot("analysis", payload);
+    // Fallback: API orqali saqlashga urinish
+    apiFetch("/api/analysis", "POST", payload).then(r => {
+      if (r?.ok) state.analysis_id = r.analysis_id;
+    });
     return FALLBACK;
   }
 }
@@ -1107,17 +1171,19 @@ el("btn-after-save")?.addEventListener("click", () => {
     total:       state.all_labels.length || getAllLabels().length,
   };
 
-  // LocalStorage ga saqlash
+  // LocalStorage ga saqlash (offline fallback)
   addSession(sessionData);
 
-  // Botga yuborish — DB ga yoziladi
-  sendToBot("symptom_tracking", {
+  // API orqali DB ga saqlash — asosiy
+  apiFetch("/api/tracking", "POST", {
     tracking_type:      "online",
     session_num:        state.session_num,
     resolved_symptoms:  resolvedLabels,
     remaining_symptoms: remainingLabels,
     overall_status:     remainingLabels.length === 0 ? "better" :
                         resolvedLabels.length > 0    ? "better" : "same",
+    analysis_id:        state.analysis_id || null,
+    ruqiya_session_id:  state.ruqiya_session_id || null,
   });
 
   const allGone = remainingLabels.length === 0;
@@ -1154,6 +1220,71 @@ el("btn-after-save")?.addEventListener("click", () => {
 
 /* ── BOSHLASH ────────────────────────────────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", () => {
+  // Foydalanuvchini Telegram ID orqali yuklash
+  loadUserOnStart();
   go("s-menu");
   initAudioPlayer();
 });
+
+// Sahifa ochilganda foydalanuvchi va uning ma'lumotlarini yuklash
+async function loadUserOnStart() {
+  const initData = getInitData();
+  if (!initData || !API_BASE) return;
+
+  // Telegram dan user ID olish
+  try {
+    const tgUser = JSON.parse(
+      decodeURIComponent((initData.match(/user=([^&]+)/) || [])[1] || "%7B%7D")
+    );
+    state.tg_id = tgUser.id || null;
+  } catch(e) {
+    console.warn("initData parse xatolik:", e);
+    return;
+  }
+
+  if (!state.tg_id) return;
+
+  // Foydalanuvchi mavjudmi?
+  const userRes = await apiFetch(`/api/user/${state.tg_id}`);
+  if (userRes?.ok && userRes.user) {
+    state.registered = true;
+    console.log("✅ Foydalanuvchi topildi:", userRes.user.full_name);
+
+    // Oxirgi tahlilni yuklash
+    const analysisRes = await apiFetch(`/api/analysis/${state.tg_id}`);
+    if (analysisRes?.ok && analysisRes.analysis) {
+      const a = analysisRes.analysis;
+      state.analysis_id = a.id;
+      // Dastlabki alomatlarni tiklash
+      state.all_labels = a.symptoms || [];
+      console.log("✅ Tahlil yuklandi, alomatlar:", state.all_labels.length);
+    }
+
+    // Sessiya tarixini yuklash — qolgan alomatlarni tiklash
+    const trackRes = await apiFetch(`/api/tracking/${state.tg_id}`);
+    if (trackRes?.ok && trackRes.history?.length) {
+      // Eng oxirgi kuzatuvdan remaining_labels ni olish
+      const last = trackRes.history[0];
+      if (last.remaining_symptoms?.length) {
+        state.remaining_labels = last.remaining_symptoms;
+        console.log("✅ Qolgan alomatlar tiklandi:", state.remaining_labels.length);
+      }
+      // Seans sonini tiklash
+      state.session_num = trackRes.history.length;
+      // LocalStorage ga ham sync qilish
+      syncHistoryFromServer(trackRes.history);
+    }
+  }
+}
+
+// Server tarixini localStorage ga sinxronlashtirish
+function syncHistoryFromServer(history) {
+  const sessions = history.map((h, i) => ({
+    session_num: i + 1,
+    date:        h.tracked_at,
+    resolved:    h.resolved_symptoms || [],
+    remaining:   h.remaining_symptoms || [],
+    total:       state.all_labels.length,
+  }));
+  saveSessions(sessions);
+}
