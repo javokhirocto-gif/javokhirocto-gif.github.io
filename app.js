@@ -23,27 +23,34 @@ function getInitData() {
 
 // Asosiy API chaqiruv funksiyasi
 async function apiFetch(path, method = "GET", body = null) {
-  if (!API_BASE) {
-    console.warn("API_BASE_URL aniqlanmagan");
+  if (!API_BASE || API_BASE === "SHU_YERGA_RAILWAY_URL_QOYING") {
+    console.warn("⚠️ API_BASE_URL sozlanmagan — index.html da URL qo'ying");
     return null;
   }
+
+  const initData = getInitData();
+  // initData bo'sh bo'lsa (Telegram tashqarisida test) — dummy data
+  const headerInitData = initData || "test_mode=1";
+
   const opts = {
     method,
     headers: {
-      "Content-Type":  "application/json",
-      "X-Init-Data":   getInitData(),
+      "Content-Type": "application/json",
+      "X-Init-Data":  headerInitData,
     },
   };
   if (body) opts.body = JSON.stringify(body);
+
   try {
     const resp = await fetch(API_BASE + path, opts);
     if (!resp.ok) {
-      console.error("API xatolik:", resp.status, path);
+      const errText = await resp.text().catch(() => "");
+      console.error(`API xatolik [${resp.status}] ${path}:`, errText);
       return null;
     }
     return await resp.json();
   } catch(e) {
-    console.error("apiFetch xatolik:", path, e);
+    console.error(`apiFetch [${method}] ${path} xatolik:`, e.message);
     return null;
   }
 }
@@ -606,19 +613,24 @@ el("btn-reg-submit")?.addEventListener("click", () => {
   if (!region) return showFieldError("reg-error", "Viloyatni kiriting");
   if (!phone)  return showFieldError("reg-error", "Telefon raqamini kiriting");
 
-  // API orqali saqlash
-  apiFetch("/api/register", "POST", {
-    full_name: name, age: +age, region, phone,
-  }).then(res => {
-    if (res?.ok) {
-      state.registered  = true;
-      state.tg_id       = res.user?.telegram_id;
-      state.analysis_id = null;
-      go("s-uyqu");
-    } else {
-      showFieldError("reg-error", "Saqlashda xatolik, qayta urinib ko'ring");
-    }
-  });
+  // Darhol state ga saqlaymiz — API javobini kutmaymiz
+  state.registered = true;
+  state.reg_data   = { full_name: name, age: +age, region, phone };
+
+  // API ga yuborish (fonda, bloklamasdan)
+  apiFetch("/api/register", "POST", { full_name: name, age: +age, region, phone })
+    .then(res => {
+      if (res?.ok) {
+        state.tg_id = res.user?.telegram_id;
+        console.log("✅ Roʻyxatdan oʻtish saqlandi");
+      } else {
+        console.warn("⚠️ API saqlashda xatolik, keyinroq uriniladi");
+      }
+    })
+    .catch(e => console.warn("Register API xatolik:", e));
+
+  // Darhol keyingi ekranga o'tamiz
+  go("s-uyqu");
 });
 
 /* ── COMPLAINT ───────────────────────────────────────────────────────────────── */
@@ -881,342 +893,38 @@ function initAudioPlayer() {
 }
 
 
-/* ── ANTHROPIC API — TAHLIL (bot kabi) ────────────────────────────────────── */
-
-const SYSTEM_PROMPT = `Siz O'zbek tilida diniy maslahat beruvchi AI yordamchisiz.
-Uslubingiz: tajribali imom yoki olim kabi — muloyim, ilmli, ishonchli.
-
-TIL:
-  • Faqat O'zbek tilida, FAQAT Lotin yozuvida yozing
-  • Kirillcha harf ISHLATMANG
-  • Arabcha so'zlar lotin harflari bilan: "Alloh", "Qur'on", "hadis", "duo", "namoz"
-
-TAQIQLANADI:
-  • "Sizda jin bor" — aniq tashxis QO'YMASLIK
-  • "Bu sehr" — aniq hukm BERMASLIK
-  • Qo'rqituvchi yoki keskin xulosalar
-  • 🧠 Psixologik jihat bo'limini YOZMANG — TAQIQLANGAN
-  • Kirillcha matn
-
-JAVOB TUZILISHI (QATIY SHART):
-
-🤲 Kirish (2 jumla, neytral — ISM YOZMANG)
-   Tasvirlangan belgilar haqida hamdard tarzda ifodalang.
-
-🔍 Mumkin bo\'lgan sabablar
-   Ehtimoliy diniy sabablarni foiz bilan keltiring.
-   Masalan: "Sehr ta'siri — 60%, Ruhiy zo'riqish — 25%, Jin aziyati — 15%"
-   Hech qachon qat'iy hukm chiqarmang.
-
-🕌 Diniy nuqtai nazar (ASOSIY bo\'lim)
-   Qur'on oyati yoki hadis keltiring.
-   Diniy manbalarda qanday talqin qilinadi.
-
-✅ Amaliy tavsiyalar
-   Aniq, qisqa va bajarilishi oson tavsiyalar ro'yxati.
-   Oyat o'qish, zikr, namoz, roqiyga murojaat.
-
-🌟 Xulosa
-   DOIM quyidagi ikki tavsiya bilan tugating:
-   — Online ruqiyani tinglash tavsiya etiladi (11 kun, tong va kechqurun).
-   — Agar o'zgarish sezilmasa, shaxsiy offline ruqiya seansiga yozilish tavsiya etiladi.
-   Allohga tavakkal va umid bilan iliq xotima.`;
-
+/* ── TAHLIL — /api/analyze orqali (GROQ kaliti faqat serverda) ──────────── */
 async function runAnalysis(payload) {
-  const { uyqu_symptoms, ongi_symptoms, xonadon_symptoms, all_symptoms, complaint } = payload;
+  const { all_symptoms, complaint } = payload;
 
-  const parts = [];
-  if (uyqu_symptoms.length)    parts.push("Uyqudagi alomatlar: "    + uyqu_symptoms.join(", "));
-  if (ongi_symptoms.length)    parts.push("O'ngidagi alomatlar: "   + ongi_symptoms.join(", "));
-  if (xonadon_symptoms.length) parts.push("Xonadondagi alomatlar: " + xonadon_symptoms.join(", "));
-  const symptomsText = parts.length ? parts.join("\n") : "aniqlanmadi";
+  const FALLBACK = `🤲 Tasvirlangan belgilar ruhiy va maʼnaviy jihatdan eʼtibor talab qiladi.
 
-  const userPrompt = `Foydalanuvchi quyidagi belgilarni belgiladi:\n${symptomsText}\n\nO'z holatini shunday tasvirladi:\n"${complaint}"\n\nUshbu ma'lumotlar asosida:\n1. Eng ehtimoliy ruhiy/ma'naviy muammoni aniqla va foizda bahoyla (masalan: Sehr ta'siri — 65%, Jin aziyati — 20%, Ruhiy zo'riqish — 15%)\n2. Har bir imkoniyat uchun qisqacha izoh ber\n3. Konkret davolash tavsiylari ber (zikrlar, amallar, ruqiya)\nJavobni o'zbek tilida, tushunarli va rahmli tarzda yoz.`;
+🔍 Mumkin boʻlgan sabablar:
+Belgilangan alomatlar (${all_symptoms.length} ta) ruhiy va maʼnaviy jihatdan koʻrib chiqilishi lozim.
 
-  const FALLBACK = `🤲 Tasvirlangan belgilar ruhiy va ma'naviy jihatdan e'tibor talab qiladi.\n\n🔍 Mumkin bo'lgan sabablar:\nBelgilangan alomatlar (${all_symptoms.length} ta) ruhiy va ma'naviy jihatdan ko'rib chiqilishi lozim.\n\n✅ Amaliy tavsiyalar:\n  - Oyatul-Kursiy, Falaq va Nos suralarini o'qing\n  - Namoz va zikrni muntazam ado eting\n  - Sabr va Allohga tavassal qiling\n\n🌟 Online ruqiyani 11 kun davomida tong va kechqurun tinglash tavsiya etiladi. Agar o'zgarish sezilmasa, shaxsiy offline ruqiya seansiga yozilishingiz mumkin. Alloh taolo shifo va baraka bersin.`;
+✅ Amaliy tavsiyalar:
+  - Oyatul-Kursiy, Falaq va Nos suralarini oʻqing
+  - Namoz va zikrni muntazam ado eting
+  - Sabr va Allohga tavassal qiling
 
-  // GROQ API kaliti — Railway GROQ_API_KEY dan olinadi
-  // Mini App da to'g'ridan-to'g'ri ishlatish uchun HTML da GROQ_KEY o'zgaruvchisi kerak
-  const groqKey = (typeof GROQ_API_KEY !== "undefined") ? GROQ_API_KEY : "";
-
-  if (!groqKey) {
-    console.warn("GROQ_API_KEY topilmadi — fallback javob");
-    sendToBot("analysis", payload);
-    return FALLBACK;
-  }
+🌟 Online ruqiyani 11 kun davomida tong va kechqurun tinglash tavsiya etiladi.
+Agar oʻzgarish sezilmasa, shaxsiy offline ruqiya seansiga yozilishingiz mumkin.
+Alloh taolo shifo va baraka bersin.`;
 
   try {
-    const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + groqKey,
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        temperature: 0.25,
-        max_tokens: 1000,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user",   content: userPrompt },
-        ],
-      }),
-    });
-
-    if (!resp.ok) {
-      const err = await resp.text();
-      console.error("GROQ API xatolik:", resp.status, err);
-      throw new Error("GROQ error: " + resp.status);
+    // GROQ Railway serverda — kalit frontendga chiqmaydi
+    const res = await apiFetch("/api/analyze", "POST", payload);
+    if (res?.ok && res.answer) {
+      if (res.analysis_id) state.analysis_id = res.analysis_id;
+      return res.answer;
     }
-
-    const data = await resp.json();
-    const answer = data?.choices?.[0]?.message?.content || "";
-
-    // API orqali DB ga saqlash
-    const saved = await apiFetch("/api/analysis", "POST", {
-      ...payload, rag_answer: answer,
-    });
-    if (saved?.ok) state.analysis_id = saved.analysis_id;
-    return answer || FALLBACK;
-
-  } catch (err) {
-    console.error("runAnalysis xatolik:", err);
-    // Fallback: API orqali saqlashga urinish
-    apiFetch("/api/analysis", "POST", payload).then(r => {
-      if (r?.ok) state.analysis_id = r.analysis_id;
-    });
+    return FALLBACK;
+  } catch(e) {
+    console.error("runAnalysis xatolik:", e);
     return FALLBACK;
   }
 }
 
-
-/* ══════════════════════════════════════════════════════════════════════════════
-   AUDIO SEANS KUZATUVI
-   ══════════════════════════════════════════════════════════════════════════════ */
-
-// Audio tugaganda chaqiriladi
-function onAudioEnded() {
-  state.session_num += 1;
-  state.after_resolved = new Set();
-
-  // remaining_labels — hali yoʻqolmagan alomatlar
-  // Birinchi seans: barcha dastlabki alomatlar
-  if (state.remaining_labels.length === 0) {
-    state.remaining_labels = [...(state.all_labels.length ? state.all_labels : getAllLabels())];
-  }
-
-  go("s-after-listen");
-}
-
-// Render: seans tugagandan keyin alomatlar tanlovi
-function renderAfterListen() {
-  const sessionNum = state.session_num;
-  const remaining  = state.remaining_labels;
-
-  // Sarlavhani yangilash
-  const sub = el("after-listen-sub");
-  if (sub) sub.textContent = `${sessionNum}-seans • Qaysi alomatlar yaxshilandi yoki yoʻqoldi?`;
-
-  // Statistika
-  const stats = el("session-stats");
-  const total  = state.all_labels.length || getAllLabels().length;
-  const sessions = loadSessions();
-  const totalResolved = sessions.reduce((acc, s) => acc + (s.resolved?.length || 0), 0);
-  const uniqueResolved = new Set(sessions.flatMap(s => s.resolved || [])).size;
-
-  if (stats) stats.innerHTML = `
-    <div class="track-stat">
-      <span class="track-stat-label">Jami seans</span>
-      <span class="track-stat-val">${sessionNum}</span>
-    </div>
-    <div class="track-stat">
-      <span class="track-stat-label">Dastlabki alomatlar</span>
-      <span class="track-stat-val">${total}</span>
-    </div>
-    <div class="track-stat">
-      <span class="track-stat-label">Hozircha yoʻqolgan</span>
-      <span class="track-stat-val track-resolved">${uniqueResolved}</span>
-    </div>
-    <div class="track-stat">
-      <span class="track-stat-label">Qolgan</span>
-      <span class="track-stat-val track-remaining">${remaining.length}</span>
-    </div>`;
-
-  // Alomatlar ro'yxati — faqat hali qolganlar
-  state.after_resolved = new Set();
-  const container = el("after-symptom-list");
-  if (!container) return;
-  container.innerHTML = "";
-
-  const countEl = el("after-resolved-count");
-
-  function updCount() {
-    if (countEl) countEl.textContent = state.after_resolved.size
-      ? `${state.after_resolved.size} ta yaxshilandi`
-      : "Hech narsa belgilanmadi";
-  }
-
-  if (!remaining.length) {
-    container.innerHTML = `<div class="info-box" style="background:rgba(82,183,136,.15);border-color:rgba(82,183,136,.3);color:var(--emerald-light)">
-      🎉 Barcha alomatlar yoʻqoldi! Allohga shukr!</div>`;
-    updCount();
-    return;
-  }
-
-  remaining.forEach((sym, i) => {
-    const item = document.createElement("div");
-    item.className = "symptom-item";
-    item.innerHTML = `
-      <span class="sym-box">
-        <svg class="sym-check" viewBox="0 0 10 10" fill="none">
-          <polyline points="1.5,5.5 4,8 8.5,2" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </span>
-      <span class="sym-label">${sym}</span>`;
-    item.addEventListener("click", () => {
-      if (state.after_resolved.has(i)) {
-        state.after_resolved.delete(i);
-        item.classList.remove("checked");
-      } else {
-        state.after_resolved.add(i);
-        item.classList.add("checked");
-      }
-      updCount();
-    });
-    container.appendChild(item);
-  });
-  updCount();
-}
-
-// Render: seanslar tarixi
-function renderHistory() {
-  const container = el("history-list");
-  if (!container) return;
-  container.innerHTML = "";
-
-  const sessions  = loadSessions();
-  const total     = state.all_labels.length || getAllLabels().length;
-
-  if (!sessions.length) {
-    container.innerHTML = `<div class="history-empty">
-      Hali hech qanday seans boʻlmagan.<br>Ruqiyani tinglashni boshlang 🎧</div>`;
-    return;
-  }
-
-  // Umumiy progress
-  const allResolved = new Set(sessions.flatMap(s => s.resolved || []));
-  const pct = total > 0 ? Math.round((allResolved.size / total) * 100) : 0;
-  container.innerHTML = `
-    <div class="overall-progress-card">
-      <div class="overall-big-num">${pct}%</div>
-      <div class="overall-label">Umumiy yaxshilanish • ${allResolved.size} ta alomat yoʻqoldi</div>
-      <div class="progress-bar" style="margin-top:10px">
-        <div class="progress-fill" style="width:${pct}%"></div>
-      </div>
-    </div>`;
-
-  // Har bir seans kartasi — oxiridan boshi
-  [...sessions].reverse().forEach((s, idx) => {
-    const num      = sessions.length - idx;
-    const resolved = s.resolved || [];
-    const rem      = s.remaining || [];
-    const date     = s.date ? new Date(s.date).toLocaleDateString("ru-RU",
-      { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "—";
-    const sPct     = total > 0 ? Math.round((resolved.length / total) * 100) : 0;
-
-    const card = document.createElement("div");
-    card.className = "history-card";
-    card.innerHTML = `
-      <div class="history-card-header">
-        <span class="history-session-num">🎧 ${num}-seans</span>
-        <span class="history-date">${date}</span>
-      </div>
-      <div class="history-progress">
-        <div class="history-progress-bar">
-          <div class="history-progress-fill" style="width:${sPct}%"></div>
-        </div>
-        <span class="history-progress-label">+${resolved.length} yoʻqoldi</span>
-      </div>
-      ${resolved.length ? `
-        <div style="font-size:.72rem;color:var(--tg-hint);margin-bottom:4px">✅ Yaxshilandi:</div>
-        <div class="history-tags">${resolved.map(r =>
-          `<span class="history-tag-resolved">${r}</span>`).join("")}</div>` : ""}
-      ${rem.length ? `
-        <div style="font-size:.72rem;color:var(--tg-hint);margin:6px 0 4px">🔴 Qolgan:</div>
-        <div class="history-tags">${rem.slice(0,5).map(r =>
-          `<span class="history-tag-remaining">${r}</span>`).join("")}
-          ${rem.length > 5 ? `<span class="history-tag-remaining">+${rem.length-5} ta</span>` : ""}
-        </div>` : `<div class="info-box" style="margin-top:8px;padding:8px 12px;font-size:.8rem">
-          🎉 Shu seansda barcha alomatlar yoʻqoldi!</div>`}`;
-    container.appendChild(card);
-  });
-}
-
-// "Saqlash" tugmasi — seans natijasini saqlash
-el("btn-after-save")?.addEventListener("click", () => {
-  const remaining = state.remaining_labels;
-  const resolvedIdxs = [...state.after_resolved];
-  const resolvedLabels   = resolvedIdxs.map(i => remaining[i]).filter(Boolean);
-  const remainingLabels  = remaining.filter((_, i) => !state.after_resolved.has(i));
-
-  // remaining ni yangilash — keyingi seans uchun
-  state.remaining_labels = remainingLabels;
-
-  const sessionData = {
-    session_num: state.session_num,
-    date:        new Date().toISOString(),
-    resolved:    resolvedLabels,
-    remaining:   remainingLabels,
-    total:       state.all_labels.length || getAllLabels().length,
-  };
-
-  // LocalStorage ga saqlash (offline fallback)
-  addSession(sessionData);
-
-  // API orqali DB ga saqlash — asosiy
-  apiFetch("/api/tracking", "POST", {
-    tracking_type:      "online",
-    session_num:        state.session_num,
-    resolved_symptoms:  resolvedLabels,
-    remaining_symptoms: remainingLabels,
-    overall_status:     remainingLabels.length === 0 ? "better" :
-                        resolvedLabels.length > 0    ? "better" : "same",
-    analysis_id:        state.analysis_id || null,
-    ruqiya_session_id:  state.ruqiya_session_id || null,
-  });
-
-  const allGone = remainingLabels.length === 0;
-
-  if (allGone) {
-    showFinal({
-      icon:  "🎉",
-      title: "Barcha alomatlar yoʻqoldi!",
-      body:  "Allohga shukr! Siz " + state.session_num + " seans tingladi va barcha alomatlar yoʻqoldi.\n\nAlloh taolo Sizi Oʻz rahmatida asrasin! 🤲",
-      extra: `<button class="btn btn-secondary" onclick="go('s-history')" style="margin-top:12px">📈 Tarixni koʻrish</button>`,
-    });
-  } else if (resolvedLabels.length > 0) {
-    showFinal({
-      icon:  "📈",
-      title: state.session_num + "-seans saqlandi!",
-      body:  `✅ ${resolvedLabels.length} ta alomat yaxshilandi\n🔴 ${remainingLabels.length} ta alomat qoldi\n\nRuqiyani tinglashni davom eting. Alloh shifo bersin! 🤲`,
-      extra: `
-        <div style="margin-bottom:10px">
-          <div class="card-title" style="font-size:.72rem;color:var(--gold);margin-bottom:6px">✅ YAXSHILANGAN</div>
-          <div class="sym-summary">${resolvedLabels.map(r => `<span class="sym-tag">${r}</span>`).join("") || "—"}</div>
-        </div>
-        <button class="btn btn-primary" onclick="go('s-ruqiya-listen')" style="margin-top:12px">🎧 Keyingi seans</button>
-        <button class="btn btn-secondary" onclick="go('s-history')" style="margin-top:8px">📈 Tarixni koʻrish</button>`,
-    });
-  } else {
-    showFinal({
-      icon:  "⏳",
-      title: state.session_num + "-seans saqlandi",
-      body:  "Bu seansda oʻzgarish sezilmadi. Davom eting — ruqiya vaqt talab qiladi.\n\nAlloh shifo bersin! 🤲",
-      extra: `<button class="btn btn-primary" onclick="go('s-ruqiya-listen')" style="margin-top:12px">🎧 Keyingi seans</button>`,
-    });
-  }
-});
 
 /* ── BOSHLASH ────────────────────────────────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", () => {
@@ -1228,52 +936,61 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Sahifa ochilganda foydalanuvchi va uning ma'lumotlarini yuklash
 async function loadUserOnStart() {
-  const initData = getInitData();
-  if (!initData || !API_BASE) return;
-
-  // Telegram dan user ID olish
-  try {
-    const tgUser = JSON.parse(
-      decodeURIComponent((initData.match(/user=([^&]+)/) || [])[1] || "%7B%7D")
-    );
-    state.tg_id = tgUser.id || null;
-  } catch(e) {
-    console.warn("initData parse xatolik:", e);
+  // API mavjud emasligida — shunchaki davom etamiz
+  if (!API_BASE) {
+    console.log("API_BASE_URL aniqlanmagan — offline rejim");
     return;
   }
 
-  if (!state.tg_id) return;
+  // initData dan tg_id olish
+  const initData = getInitData();
+  if (initData) {
+    try {
+      const match   = initData.match(/user=([^&]+)/);
+      const tgUser  = match ? JSON.parse(decodeURIComponent(match[1])) : {};
+      state.tg_id   = tgUser.id || null;
+    } catch(e) {
+      console.warn("initData parse xatolik:", e);
+    }
+  }
 
-  // Foydalanuvchi mavjudmi?
-  const userRes = await apiFetch(`/api/user/${state.tg_id}`);
-  if (userRes?.ok && userRes.user) {
+  // tg_id yo'q bo'lsa — to'xtaymiz (xatolik chiqarmaymiz)
+  if (!state.tg_id) {
+    console.log("tg_id topilmadi — Telegram ichida ochish kerak");
+    return;
+  }
+
+  try {
+    // Foydalanuvchi mavjudmi?
+    const userRes = await apiFetch(`/api/user/${state.tg_id}`);
+    if (!userRes?.ok) return; // Yangi foydalanuvchi — ro'yxatdan o'tish kerak
+
     state.registered = true;
-    console.log("✅ Foydalanuvchi topildi:", userRes.user.full_name);
+    console.log("✅ Foydalanuvchi topildi:", userRes.user?.full_name);
 
-    // Oxirgi tahlilni yuklash
-    const analysisRes = await apiFetch(`/api/analysis/${state.tg_id}`);
+    // Parallel yuklash — tezroq
+    const [analysisRes, trackRes] = await Promise.all([
+      apiFetch(`/api/analysis/${state.tg_id}`),
+      apiFetch(`/api/tracking/${state.tg_id}`),
+    ]);
+
     if (analysisRes?.ok && analysisRes.analysis) {
-      const a = analysisRes.analysis;
-      state.analysis_id = a.id;
-      // Dastlabki alomatlarni tiklash
-      state.all_labels = a.symptoms || [];
-      console.log("✅ Tahlil yuklandi, alomatlar:", state.all_labels.length);
+      state.analysis_id = analysisRes.analysis.id;
+      state.all_labels  = analysisRes.analysis.symptoms || [];
+      console.log("✅ Tahlil yuklandi:", state.all_labels.length, "ta alomat");
     }
 
-    // Sessiya tarixini yuklash — qolgan alomatlarni tiklash
-    const trackRes = await apiFetch(`/api/tracking/${state.tg_id}`);
     if (trackRes?.ok && trackRes.history?.length) {
-      // Eng oxirgi kuzatuvdan remaining_labels ni olish
       const last = trackRes.history[0];
-      if (last.remaining_symptoms?.length) {
-        state.remaining_labels = last.remaining_symptoms;
-        console.log("✅ Qolgan alomatlar tiklandi:", state.remaining_labels.length);
-      }
-      // Seans sonini tiklash
-      state.session_num = trackRes.history.length;
-      // LocalStorage ga ham sync qilish
+      state.remaining_labels = last.remaining_symptoms || [];
+      state.session_num      = trackRes.history.length;
       syncHistoryFromServer(trackRes.history);
+      console.log("✅ Tarix yuklandi:", state.session_num, "seans");
     }
+
+  } catch(e) {
+    // API xatolik — foydalanuvchi ishini to'xtatmaymiz
+    console.warn("loadUserOnStart xatolik (kritik emas):", e);
   }
 }
 
