@@ -168,21 +168,47 @@
   <!-- ══ SCREEN: TAHLIL NATIJASI ══ -->
   <div id="s-result" class="screen">
     <div class="section-header">
-      <span class="section-emoji">📊</span>
+      <span class="section-emoji">📋</span>
       <h2 class="section-title">Tahlil natijasi</h2>
+      <p class="section-sub" id="result-symptoms-count"></p>
     </div>
+
+    <!-- Belgilangan alomatlar -->
     <div class="card">
-      <div class="card-title"><span class="icon">📋</span> Belgilangan alomatlar</div>
+      <div class="card-title">Belgilangan alomatlar</div>
       <div class="sym-summary" id="result-symptoms"></div>
     </div>
+
+    <!-- Asosiy xulosa -->
     <div class="result-card">
-      <div class="result-title">🔍 Tahlil</div>
-      <div class="result-body" id="result-body">Natijangiz Telegram chatda yuborildi. Quyidagi qadamlardan birini tanlang.</div>
+      <div class="result-title">Holat tavsifi</div>
+      <div class="result-body" id="result-body">Katta ehtimol bilan bu alomatlarning sababi sehr yoki jinn ta'siri bo'lishi mumkin.</div>
     </div>
-    <div class="warn-box">⚠️ Barcha javoblar taxminiy. Yakuniy qaror va masʼuliyat sizda qoladi.</div>
-    <button class="btn btn-primary" data-goto="s-ruqiya-intro">🧕 Onlayn ruqiyani boshlash</button>
-    <button class="btn btn-secondary" data-goto="s-tracking">📊 Alomatlarni kuzatish</button>
-    <button class="btn btn-secondary" data-goto="s-offline">📅 Shaxsan tashrif yozilish</button>
+
+    <!-- Tavsiya -->
+    <div class="result-card" style="border-color:rgba(200,169,110,.25)">
+      <div class="result-title" style="font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;font-family:var(--f-body);color:var(--gold-dim);margin-bottom:10px">Tavsiyamiz</div>
+      <p style="font-size:.88rem;line-height:1.7;color:var(--white)">Holatingizning asl sababini aniq aniqlash va tuzatish uchun <strong style="color:var(--gold-pale)">TIB VA DAM markaziga shaxsan tashrif buyurishingiz</strong> tavsiya etiladi.</p>
+      <p style="font-size:.82rem;line-height:1.6;color:var(--muted);margin-top:8px">Tabib ko'rigidan o'tgan holda ruqiya seansi o'tkaziladi va holatga mos davolanish yo'naltiriladi.</p>
+    </div>
+
+    <div class="warn-box">⚠️ Barcha javoblar taxminiy. Yakuniy qaror mutaxassis ko'rigidan so'ng aniqlanadi.</div>
+
+    <!-- Asosiy CTA -->
+    <button class="btn btn-primary" data-goto="s-offline" style="margin-bottom:6px">
+      📅 TIB VA DAM ga tashrif yozish
+    </button>
+
+    <!-- Ikkinchi variant -->
+    <div class="divider">yoki</div>
+
+    <div class="rec-card rec-card-secondary" id="btn-choose-online">
+      <div class="rec-num">02</div>
+      <div class="rec-label">Offline tashrif imkoni bo'lmasa</div>
+      <div class="rec-title">Online ruqiya orqali</div>
+      <div class="rec-desc">O'z-o'zini davolash hamda alomatlarning yo'qolishini kuzatib borish imkoniyati</div>
+      <div class="rec-arrow">Boshlash →</div>
+    </div>
   </div>
 
 
