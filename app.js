@@ -1,108 +1,79 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   app.js — SHIFODUR Mini App  (to'liq qayta yozilgan)
-   HTML id-lari: s-menu, s-register, s-uyqu, s-ongi, s-xonadon,
-                 s-complaint, s-loading, s-result, s-zikr, s-zikr-detail,
-                 s-ruqiya-intro, s-ruqiya-listen, s-ruqiya-check,
-                 s-reaction-words, s-during-symptoms,
-                 s-tracking, s-offline, s-malumot, s-malumot-detail,
-                 s-savol, s-final
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   app.js — TIB VA DAM Mini App
+   Barcha listeners DOMContentLoaded ichida — bu asosiy qoida
+   ═══════════════════════════════════════════════════════════════ */
 
-/* ── TELEGRAM SDK ──────────────────────────────────────────────────────────── */
+/* ── TELEGRAM ──────────────────────────────────────────────────── */
 const tg = window.Telegram?.WebApp || null;
 if (tg) { tg.ready(); tg.expand(); tg.enableClosingConfirmation(); }
 
-// ── API CONFIG ──────────────────────────────────────────────────────────────
-// Railway API URL — HTML da API_BASE_URL o'zgaruvchisi orqali beriladi
-const API_BASE = (typeof API_BASE_URL !== "undefined") ? API_BASE_URL : "";
-
-// initData — Telegram dan keladi (foydalanuvchi kimligini tasdiqlaydi)
-function getInitData() {
-  return tg?.initData || "";
+function getInitData() { return tg?.initData || ""; }
+function sendToBot(action, payload = {}) {
+  if (tg) tg.sendData(JSON.stringify({ action, ...payload }));
+  else console.log("[sendData]", action, payload);
 }
 
-// Asosiy API chaqiruv funksiyasi
+/* ── API CONFIG ────────────────────────────────────────────────── */
+const API_BASE = (typeof API_BASE_URL !== "undefined" &&
+                  API_BASE_URL !== "SHU_YERGA_RAILWAY_URL_QOYING")
+                  ? API_BASE_URL.replace(/\/$/, "") : "";
+
+const AUDIO_SRC = (typeof RUQIYA_AUDIO_URL !== "undefined") ? RUQIYA_AUDIO_URL : "";
+
 async function apiFetch(path, method = "GET", body = null) {
-  if (!API_BASE || API_BASE === "SHU_YERGA_RAILWAY_URL_QOYING") {
-    console.warn("⚠️ API_BASE_URL sozlanmagan — index.html da URL qo'ying");
-    return null;
-  }
-
-  const initData = getInitData();
-  // initData bo'sh bo'lsa (Telegram tashqarisida test) — dummy data
-  const headerInitData = initData || "test_mode=1";
-
-  const opts = {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      "X-Init-Data":  headerInitData,
-    },
-  };
-  if (body) opts.body = JSON.stringify(body);
-
+  if (!API_BASE) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000);
   try {
-    // 12 soniya timeout
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 12000);
-    opts.signal = controller.signal;
-
-    const resp = await fetch(API_BASE + path, opts);
+    const resp = await fetch(API_BASE + path, {
+      method,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Init-Data":  getInitData() || "no_init_data",
+      },
+      body: body ? JSON.stringify(body) : null,
+    });
     clearTimeout(timer);
-
-    if (!resp.ok) {
-      const errText = await resp.text().catch(() => "");
-      console.error(`API xatolik [${resp.status}] ${path}:`, errText);
-      return null;
-    }
+    if (!resp.ok) { console.error("API", resp.status, path); return null; }
     return await resp.json();
   } catch(e) {
-    if (e.name === "AbortError") {
-      console.error(`apiFetch timeout: ${path}`);
-    } else {
-      console.error(`apiFetch [${method}] ${path} xatolik:`, e.message);
-    }
+    clearTimeout(timer);
+    console.error("apiFetch", path, e.message);
     return null;
   }
 }
 
-// Eski sendToBot — faqat fallback sifatida saqlanadi
-function sendToBot(action, payload = {}) {
-  const data = JSON.stringify({ action, ...payload });
-  if (tg) tg.sendData(data);
-  else console.log("[sendData fallback]", data);
-}
-
-/* ── MA'LUMOTLAR ───────────────────────────────────────────────────────────── */
+/* ── MA'LUMOTLAR ───────────────────────────────────────────────── */
 const UYQU_SYMPTOMS = [
   ["Uyquга ketishi bilan choʻchib uyg'onish","uyqu_chochib"],
   ["Uyquda yurak havliqib uyg'onish","uyqu_yurak"],
   ["Ilon yoki ilonlarning hujum qilishi","uyqu_ilon"],
-  ["It, mushuk (tushda)","uyqu_it_mushuk"],
+  ["It, mushuk (tushda)","uyqu_it"],
   ["Sichqon, kalamush (tushda)","uyqu_sichqon"],
   ["Chayon, kaltakesak (tushda)","uyqu_chayon"],
   ["Tushunarsiz junli hayvonlar","uyqu_junli"],
-  ["Hojatxona, ahlatxona (tushda)","uyqu_hojatxona"],
+  ["Hojatxona, ahlatxona (tushda)","uyqu_hojat"],
   ["Suqmoq yoʻllar (tushda)","uyqu_suqmoq"],
-  ["Qabristonlar (tushda)","uyqu_qabriston"],
+  ["Qabristonlar (tushda)","uyqu_qabr"],
   ["Mayitlar, chaqaloqlar (tushda)","uyqu_mayit"],
   ["Loyqa suvlar (tushda)","uyqu_loyqa"],
   ["Yongʻin, falokat (tushda)","uyqu_yongin"],
-  ["Suvga choʻkish (tushda)","uyqu_suvga"],
+  ["Suvga choʻkish (tushda)","uyqu_suv"],
   ["Tushunarsiz tugamas yoʻllar","uyqu_tugamas"],
   ["Uyquda ovoz chiqarish","uyqu_ovoz"],
   ["Uyquda sovuq otish yoki terlash","uyqu_sovuq"],
   ["Pay yoki tomir tortib qolishi","uyqu_pay"],
   ["Zino qilish yoki zoʻrlash (tushda)","uyqu_zino"],
-  ["Yalangʻoch erkak va ayollar (tushda)","uyqu_yalangoch"],
-  ["Yaqinlari bilan yaqinlik (tushda)","uyqu_yaqinlik"],
+  ["Yalangʻoch erkak va ayollar (tushda)","uyqu_yalang"],
+  ["Yaqinlari bilan yaqinlik (tushda)","uyqu_yaqin"],
   ["Yonida kimdir yotgandek tuyulishi","uyqu_yonida"],
   ["Uyquda nimadir bosishi","uyqu_bosish"],
   ["Bakirish, ovozi chiqmay qolishi","uyqu_bakirish"],
 ];
 const ONGI_SYMPTOMS = [
   ["Maʼlum vaqtda bosh ogʻrigʻi","ongi_bosh"],
-  ["Holsizlik, charchoq, tinimсiz uyqu kelishi","ongi_holsiz"],
+  ["Holsizlik, charchoq, tinimсiz uyqu","ongi_holsiz"],
   ["Tez asabiylashtish","ongi_asabiy"],
   ["Sababsiz yurak siqilishi","ongi_yurak"],
   ["Ogʻriqlar koʻchib yurishi","ongi_oghriq"],
@@ -157,226 +128,126 @@ const DURING_SYMPTOMS = [
   ["Allohga ishonmaslik fikri","ds_fikr2"],
   ["Xoch (krest) koʻzga koʻrinishi","ds_xoch"],
 ];
-
-const ZIKR_DATA = {
-  uyqu: {
-    icon:"😴", title:"Uyqu uchun zikrlar",
-    body:`• Uxlashdan oldin tahorat
-• Oyatul-Kursiy — 1 marta
-• Ixlos, Falaq, Nos — 3 martadan
-• «Bismika Allohuma amutu va ahyo» — 1 marta`
-  },
-  bezovtalik: {
-    icon:"😟", title:"Bezovtalik uchun zikrlar",
-    body:`• «Hasbunallahu va nimal vakiyl» — koʻp marta
-• «Astagʻfirulloh» — 100 marta
-• Sura Fotiha — 7 marta
-• Oyatul-Kursiy — kuniga 1–2 marta`
-  },
-  vasvasa: {
-    icon:"🌀", title:"Vas-vasa uchun zikrlar",
-    body:`• «Aʼuzu billahi minash-shaytonir-rojim» — 3 marta
-• Sura Nos — 7 marta
-• Sura Falaq — 7 marta
-• Oyatul-Kursiy — 1–3 marta`
-  },
-  umumiy: {
-    icon:"📿", title:"Umumiy zikrlar",
-    body:`• Sura Fotiha — 7 marta
-• Oyatul-Kursiy — 1–3 marta
-• Ixlos, Falaq, Nos — 7 martadan
-• Uyda Baqara surasini eshittirish — haftasiga 1 marta`
-  },
-  kunlik: {
-    icon:"☀️", title:"Kunlik zikrlar",
-    body:`• Bomdoddan keyin: Oyatul-Kursiy, Ixlos/Falaq/Nos — 3 martadan
-• «Astagʻfirulloh» — 100 marta
-• Uyqudan oldin: «Bismika Allohuma amutu va ahyo» — 1 marta`
-  },
-};
-
 const MALUMOT_DATA = {
   domla: {
     title:"👳 Sayfulloh domla haqida",
     body:`🔹 Oʻzbekiston Xalq Tabobati Assotsiatsiyasining rasmiy aʼzosi
 
 🎓 Taʼlim va malaka:
-Oliy maʼlumotli mutaxassis — Misr, Saudiya Arabistoni, Turkiya, Moskva va Sankt-Peterburgda tahsil olgan va malaka oshirgan.
+Oliy maʼlumotli mutaxassis — Misr, Saudiya Arabistoni, Turkiya, Moskva va Sankt-Peterburgda tahsil olgan.
 
 🌟 Ixtisosligi:
-Oʻziga xos uslubda "Ruhiy bezovtalik muolajasi" sohasida chuqur ilmiy izlanishlar olib boradi.
+"Ruhiy bezovtalik muolajasi" sohasida chuqur ilmiy izlanishlar.
 
-✅ Koʻzga koʻringan tajribali Roqiy sifatida eʼtirof etilgan.`,
-    map: false,
+✅ Koʻzga koʻringan tajribali Roqiy sifatida eʼtirof etilgan.`
   },
   markaz: {
-    title:"🏥 \"TIB VA DAM\" markazi haqida",
+    title:"🏥 \"TIB VA DAM\" markazi",
     body:`📍 Yangi Toshkent, Gulzor MFY
 Moʻljal: Yangi Qoʻyliq bozori, Food City koʻchasi
 
 🕐 Qabul: Jumaday tashqari har kuni
 • Ertalab: 07:00
-• Kechqurun: 20:00`,
-    map: false,
+• Kechqurun: 20:00`
   },
   manzil: {
-    title:"📍 Manzil va xarita",
+    title:"📍 Manzil",
     body:`Yangi Toshkent, Gulzor MFY
 Moʻljal: Yangi Qoʻyliq bozori, Food City koʻchasi
 
-🕐 Jumaday tashqari har kuni
-• Ertalab: 07:00
-• Kechqurun: 20:00`,
-    map: true,
-    lat: 41.3264, lon: 69.3728,
+🕐 Jumaday tashqari har kuni: 07:00 va 20:00`,
+    map: true, lat: 41.3264, lon: 69.3728,
   },
-
 };
 
-/* ── HOLAT ──────────────────────────────────────────────────────────────────── */
+/* ── HOLAT ─────────────────────────────────────────────────────── */
 const state = {
-  registered:       false,
-  uyqu_selected:    new Set(),
-  ongi_selected:    new Set(),
-  xonadon_selected: new Set(),
-  complaint:        "",
-  all_labels:       [],         // dastlabki tanlangan barcha alomatlar
-  remaining_labels: [],         // hali yoʻqolmagan alomatlar
-  rw_selected:      new Set(),
-  ds_selected:      new Set(),
-  tr_resolved:      new Set(),
-  offline_date:     "",
-  offline_time:     "",
-  prev_screen:      "s-menu",
-  // Server bilan sinxronizatsiya
-  tg_id:              null,   // Telegram user ID
-  analysis_id:        null,   // oxirgi tahlil ID (DB dan)
-  ruqiya_session_id:  null,   // joriy sessiya ID (DB dan)
-  // Audio seans kuzatuvi
-  session_num:      0,          // necha marta tinglandi
-  after_resolved:   new Set(),  // bu seansda yaxshilangan alomatlar indekslari
+  registered:        false,
+  reg_data:          null,
+  tg_id:             null,
+  analysis_id:       null,
+  ruqiya_session_id: null,
+  uyqu_selected:     new Set(),
+  ongi_selected:     new Set(),
+  xonadon_selected:  new Set(),
+  complaint:         "",
+  all_labels:        [],
+  remaining_labels:  [],
+  rag_answer:        "",
+  rw_selected:       new Set(),
+  ds_selected:       new Set(),
+  tr_resolved:       new Set(),
+  offline_date:      "",
+  offline_time:      "",
+  session_num:       0,
+  after_resolved:    new Set(),
 };
 
-/* ── LOCAL STORAGE — SEANSLAR TARIXI ──────────────────────────────────────── */
-// Barcha seanslarni brauzerda saqlaymiz, botga ham yuboramiz
-function loadSessions() {
-  try {
-    const raw = localStorage.getItem("ruqiya_sessions");
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-
-function saveSessions(sessions) {
-  try { localStorage.setItem("ruqiya_sessions", JSON.stringify(sessions)); }
-  catch(e) { console.warn("localStorage xatolik:", e); }
-}
-
-function addSession(sessionData) {
-  const sessions = loadSessions();
-  sessions.push(sessionData);
-  saveSessions(sessions);
-  return sessions;
-}
-
-/* ── NAVIGATSIYA ────────────────────────────────────────────────────────────── */
-const PROGRESS_MAP = {
-  "s-menu":0,"s-register":10,"s-malumot":5,"s-malumot-detail":5,"s-savol":5,
-  "s-uyqu":20,"s-ongi":40,"s-xonadon":58,"s-complaint":72,
-  "s-loading":77,"s-result":82,
-  "s-ruqiya-intro":84,"s-ruqiya-listen":86,"s-ruqiya-check":88,
-  "s-reaction-words":90,"s-during-symptoms":94,
-  "s-tracking":95,"s-offline":95,"s-after-listen":97,"s-history":60,"s-final":100,
+/* ── NAVIGATSIYA ───────────────────────────────────────────────── */
+const PROGRESS = {
+  "s-menu":0,"s-register":10,"s-uyqu":22,"s-ongi":40,"s-xonadon":58,
+  "s-complaint":72,"s-loading":77,"s-result":82,"s-ruqiya-intro":84,
+  "s-ruqiya-listen":86,"s-ruqiya-check":88,"s-reaction-words":90,
+  "s-during-symptoms":94,"s-tracking":95,"s-offline":95,
+  "s-after-listen":97,"s-history":60,"s-malumot":5,
+  "s-malumot-detail":5,"s-savol":5,"s-final":100,
 };
-
-// Back map: bu ekranda geri tugma bosila qayerga borish kerak
-const BACK_MAP = {
-  "s-register":        "s-menu",
-  "s-uyqu":            "s-menu",
-  "s-ongi":            "s-uyqu",
-  "s-xonadon":         "s-ongi",
-  "s-complaint":       "s-xonadon",
-  "s-result":          "s-menu",
-  "s-ruqiya-intro":    "s-menu",
-  "s-ruqiya-listen":   "s-ruqiya-intro",
-  "s-ruqiya-check":    "s-ruqiya-intro",
-  "s-reaction-words":  "s-ruqiya-intro",
-  "s-during-symptoms": "s-reaction-words",
-  "s-tracking":        "s-menu",
-  "s-offline":         "s-menu",
-  "s-after-listen":    "s-ruqiya-listen",
-  "s-history":         "s-ruqiya-listen",
-  "s-malumot":         "s-menu",
-  "s-malumot-detail":  "s-malumot",
-  "s-savol":           "s-menu",
-  "s-final":           "s-menu",
+const BACK = {
+  "s-register":"s-menu","s-uyqu":"s-menu","s-ongi":"s-uyqu",
+  "s-xonadon":"s-ongi","s-complaint":"s-xonadon","s-result":"s-menu",
+  "s-ruqiya-intro":"s-menu","s-ruqiya-listen":"s-ruqiya-intro",
+  "s-ruqiya-check":"s-ruqiya-intro","s-reaction-words":"s-ruqiya-intro",
+  "s-during-symptoms":"s-reaction-words","s-tracking":"s-menu",
+  "s-offline":"s-menu","s-after-listen":"s-ruqiya-listen",
+  "s-history":"s-ruqiya-listen","s-malumot":"s-menu",
+  "s-malumot-detail":"s-malumot","s-savol":"s-menu","s-final":"s-menu",
 };
-
 let currentScreen = "";
 
+function el(id) { return document.getElementById(id); }
+
 function go(id) {
-  // Barcha screen-larni yashirish
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  const next = document.getElementById(id);
+  const next = el(id);
   if (!next) { console.error("Screen topilmadi:", id); return; }
   next.classList.add("active");
-  state.prev_screen = currentScreen || "s-menu";
   currentScreen = id;
   window.scrollTo({ top:0 });
-
-  // Progress
-  const pct = PROGRESS_MAP[id] ?? 0;
-  document.querySelectorAll(".progress-fill").forEach(el => el.style.width = pct + "%");
-  document.querySelectorAll(".progress-label").forEach(el => el.textContent = pct ? pct+"%" : "");
-
-  // Telegram back button
-  if (tg) {
-    if (id === "s-menu") tg.BackButton.hide();
-    else tg.BackButton.show();
-  }
-
-  // Orqaga tugmasi
-  const backBar = document.getElementById("back-bar");
-  if (backBar) backBar.style.display = (id === "s-menu") ? "none" : "block";
-
-  // Ekran ochilganda kerakli narsalarni render qilish
-  if (id === "s-uyqu")            renderSymptoms("uyqu-list", UYQU_SYMPTOMS, state.uyqu_selected, "uyqu-count");
-  if (id === "s-ongi")            renderSymptoms("ongi-list", ONGI_SYMPTOMS, state.ongi_selected, "ongi-count");
+  const pct = PROGRESS[id] || 0;
+  document.querySelectorAll(".progress-fill").forEach(e => e.style.width = pct + "%");
+  document.querySelectorAll(".progress-label").forEach(e => e.textContent = pct ? pct+"%" : "");
+  const bb = el("back-bar");
+  if (bb) bb.style.display = id === "s-menu" ? "none" : "block";
+  if (tg) id === "s-menu" ? tg.BackButton.hide() : tg.BackButton.show();
+  // Render on open
+  if (id === "s-uyqu")            renderSymptoms("uyqu-list",    UYQU_SYMPTOMS,    state.uyqu_selected,    "uyqu-count");
+  if (id === "s-ongi")            renderSymptoms("ongi-list",    ONGI_SYMPTOMS,    state.ongi_selected,    "ongi-count");
   if (id === "s-xonadon")         renderSymptoms("xonadon-list", XONADON_SYMPTOMS, state.xonadon_selected, "xonadon-count");
   if (id === "s-complaint")       renderComplaintSummary();
   if (id === "s-result")          renderResult();
-  if (id === "s-reaction-words")  renderChips("rw-grid", REACTION_WORDS, state.rw_selected, "word-chip", "rw-count");
-  if (id === "s-during-symptoms") renderChips("ds-grid", DURING_SYMPTOMS, state.ds_selected, "chip", "ds-count");
+  if (id === "s-reaction-words")  renderChips("rw-grid", REACTION_WORDS,    state.rw_selected, "word-chip", "rw-count");
+  if (id === "s-during-symptoms") renderChips("ds-grid", DURING_SYMPTOMS,   state.ds_selected, "chip",      "ds-count");
   if (id === "s-tracking")        renderTracking();
+  if (id === "s-offline")         renderOffline();
   if (id === "s-after-listen")    renderAfterListen();
   if (id === "s-history")         renderHistory();
-  if (id === "s-offline")         renderOffline();
 }
 
-// Telegram back button
-if (tg) {
-  tg.BackButton.onClick(() => {
-    const target = BACK_MAP[currentScreen];
-    if (target) go(target);
-  });
+function requireReg(dest) {
+  const needReg = ["s-uyqu","s-ongi","s-xonadon","s-complaint","s-result",
+    "s-ruqiya-intro","s-ruqiya-listen","s-reaction-words",
+    "s-during-symptoms","s-tracking","s-offline","s-after-listen","s-history"];
+  if (needReg.includes(dest) && !state.registered) { go("s-register"); return true; }
+  return false;
 }
 
-// Нативная кнопка "Orqaga" (HTML кнопка, работает и без Telegram)
-document.addEventListener("click", e => {
-  if (e.target.closest("#btn-back-native")) {
-    const target = BACK_MAP[currentScreen];
-    if (target) go(target);
-  }
-});
-
-/* ── YORDAMCHI ──────────────────────────────────────────────────────────────── */
-function el(id) { return document.getElementById(id); }
-
-function showFieldError(id, msg) {
+/* ── YORDAMCHI ─────────────────────────────────────────────────── */
+function showErr(id, msg) {
   const e = el(id);
   if (!e) return;
   e.textContent = msg;
   e.style.display = "block";
-  setTimeout(() => { e.style.display = "none"; }, 3000);
+  setTimeout(() => { e.style.display = "none"; }, 3500);
 }
 
 function getAllLabels() {
@@ -391,106 +262,97 @@ function getLabels(data, sel) {
   return data.filter(([,k]) => sel.has(k)).map(([l]) => l);
 }
 
-function tagsHtml(labels, emoji = "") {
-  if (!labels.length) return '<span class="muted-text">—</span>';
-  return labels.map(l => `<span class="sym-tag">${emoji}${l}</span>`).join("");
+function tagsHtml(labels, cls = "sym-tag") {
+  if (!labels || !labels.length) return '<span class="muted-text">—</span>';
+  return labels.map(l => `<span class="${cls}">${l}</span>`).join("");
 }
 
 function getAvailableDates(n = 6) {
   const WD = ["Yak","Dush","Sesh","Chor","Pay","Jum","Shan"];
-  const out = [];
-  const d = new Date();
+  const out = [], d = new Date();
   d.setDate(d.getDate() + 1);
   while (out.length < n) {
-    if (d.getDay() !== 5) {
-      out.push({
-        iso:   d.toISOString().slice(0,10),
-        label: d.toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit"}),
-        wd:    WD[d.getDay()],
-      });
-    }
+    if (d.getDay() !== 5) out.push({
+      iso:   d.toISOString().slice(0,10),
+      label: d.toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit"}),
+      wd:    WD[d.getDay()],
+    });
     d.setDate(d.getDate() + 1);
   }
   return out;
 }
 
-/* ── RENDER FUNKSIYALARI ────────────────────────────────────────────────────── */
+/* ── LOCAL STORAGE ─────────────────────────────────────────────── */
+function loadSessions() {
+  try { return JSON.parse(localStorage.getItem("ruqiya_sessions") || "[]"); }
+  catch { return []; }
+}
+function saveSessions(s) {
+  try { localStorage.setItem("ruqiya_sessions", JSON.stringify(s)); } catch{}
+}
+function addSession(data) {
+  const s = loadSessions(); s.push(data); saveSessions(s); return s;
+}
 
-// Symptom list — div asosida, label emas (double-fire bugidan xoli)
-function renderSymptoms(containerId, data, selectedSet, countId) {
-  const container = el(containerId);
-  if (!container) return;
-  container.innerHTML = "";
-
+/* ── RENDER ────────────────────────────────────────────────────── */
+function renderSymptoms(cid, data, sel, countId) {
+  const c = el(cid); if (!c) return;
+  c.innerHTML = "";
   function upd() {
-    const c = el(countId);
-    if (c) c.textContent = selectedSet.size
-      ? `${selectedSet.size} ta belgilandi` : "Hech narsa belgilanmadi";
+    const e = el(countId);
+    if (e) e.textContent = sel.size ? `${sel.size} ta belgilandi` : "Hech narsa belgilanmadi";
   }
-
   data.forEach(([label, key]) => {
     const item = document.createElement("div");
-    item.className = "symptom-item" + (selectedSet.has(key) ? " checked" : "");
-    item.innerHTML = `
-      <span class="sym-box">
-        <svg class="sym-check" viewBox="0 0 10 10" fill="none">
-          <polyline points="1.5,5.5 4,8 8.5,2" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </span>
-      <span class="sym-label">${label}</span>`;
+    item.className = "symptom-item" + (sel.has(key) ? " checked" : "");
+    item.innerHTML = `<span class="sym-box"><svg class="sym-check" viewBox="0 0 10 10" fill="none">
+      <polyline points="1.5,5.5 4,8 8.5,2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg></span><span class="sym-label">${label}</span>`;
     item.addEventListener("click", () => {
-      if (selectedSet.has(key)) { selectedSet.delete(key); item.classList.remove("checked"); }
-      else { selectedSet.add(key); item.classList.add("checked"); }
+      sel.has(key) ? (sel.delete(key), item.classList.remove("checked"))
+                   : (sel.add(key),    item.classList.add("checked"));
       upd();
     });
-    container.appendChild(item);
+    c.appendChild(item);
   });
   upd();
 }
 
-// Chips (word-chip yoki chip class bilan)
-function renderChips(containerId, data, selectedSet, chipClass, countId) {
-  const container = el(containerId);
-  if (!container) return;
-  container.innerHTML = "";
-
+function renderChips(cid, data, sel, chipClass, countId) {
+  const c = el(cid); if (!c) return;
+  c.innerHTML = "";
   function upd() {
-    const c = el(countId);
-    if (c) c.textContent = selectedSet.size
-      ? `${selectedSet.size} ta belgilandi` : "Hech narsa belgilanmadi";
+    const e = el(countId);
+    if (e) e.textContent = sel.size ? `${sel.size} ta belgilandi` : "Hech narsa belgilanmadi";
   }
-
   data.forEach(([label, key]) => {
     const chip = document.createElement("div");
-    chip.className = chipClass + (selectedSet.has(key) ? " selected" : "");
+    chip.className = chipClass + (sel.has(key) ? " selected" : "");
     chip.textContent = label;
     chip.addEventListener("click", () => {
-      if (selectedSet.has(key)) { selectedSet.delete(key); chip.classList.remove("selected"); }
-      else { selectedSet.add(key); chip.classList.add("selected"); }
+      sel.has(key) ? (sel.delete(key), chip.classList.remove("selected"))
+                   : (sel.add(key),    chip.classList.add("selected"));
       upd();
     });
-    container.appendChild(chip);
+    c.appendChild(chip);
   });
   upd();
 }
 
-// Shikoyat ekranidagi xulosa
 function renderComplaintSummary() {
-  const labels = getAllLabels();
   const c = el("complaint-summary");
-  if (c) c.innerHTML = labels.length ? tagsHtml(labels) :
-    '<span class="muted-text">Alomatlar belgilanmadi</span>';
+  if (c) c.innerHTML = tagsHtml(getAllLabels());
 }
 
-// Tahlil natijasi ekrani
 function renderResult() {
   const labels = getAllLabels();
   state.all_labels = labels;
   const c = el("result-symptoms");
-  if (c) c.innerHTML = labels.length ? tagsHtml(labels) :
-    '<span class="muted-text">—</span>';
-  // RAG javobini ko'rsatish
+  if (c) c.innerHTML = tagsHtml(labels);
+  const cnt = el("result-symptoms-count");
+  if (cnt) cnt.textContent = labels.length
+    ? `${labels.length} ta alomat aniqlandi`
+    : "Alomatlar belgilanmadi";
   const rb = el("result-body");
   if (rb && state.rag_answer) {
     rb.style.whiteSpace = "pre-wrap";
@@ -498,60 +360,44 @@ function renderResult() {
   }
 }
 
-// Kuzatuv ekrani
 function renderTracking() {
   const all = state.all_labels.length ? state.all_labels : getAllLabels();
   state.tr_resolved = new Set();
-  const container = el("track-list");
-  if (!container) return;
-  container.innerHTML = "";
-
+  const c = el("track-list"); if (!c) return;
+  c.innerHTML = "";
+  const btn = el("btn-track-save");
   if (!all.length) {
-    container.innerHTML = '<p class="muted-text" style="text-align:center">Alomatlar topilmadi. Avval tahlil oʻtkazing.</p>';
-    el("btn-track-save").style.display = "none";
-    return;
+    c.innerHTML = '<p class="muted-text" style="text-align:center">Alomatlar topilmadi. Avval tahlil oʻtkazing.</p>';
+    if (btn) btn.style.display = "none"; return;
   }
-  el("btn-track-save").style.display = "";
-
+  if (btn) btn.style.display = "";
   function upd() {
-    const res = state.tr_resolved.size;
-    const rem = all.length - res;
     const s = el("track-stats");
     if (s) s.innerHTML = `
-      <div class="track-stat"><span class="track-stat-label">Jami alomatlar</span><span class="track-stat-val">${all.length}</span></div>
-      <div class="track-stat"><span class="track-stat-label">Yoʻqoldi</span><span class="track-stat-val track-resolved">${res}</span></div>
-      <div class="track-stat"><span class="track-stat-label">Qolgan</span><span class="track-stat-val track-remaining">${rem}</span></div>`;
+      <div class="track-stat"><span class="track-stat-label">Jami</span><span class="track-stat-val">${all.length}</span></div>
+      <div class="track-stat"><span class="track-stat-label">Yoʻqoldi</span><span class="track-stat-val track-resolved">${state.tr_resolved.size}</span></div>
+      <div class="track-stat"><span class="track-stat-label">Qolgan</span><span class="track-stat-val track-remaining">${all.length - state.tr_resolved.size}</span></div>`;
   }
-
   all.forEach((sym, i) => {
     const item = document.createElement("div");
     item.className = "symptom-item";
-    item.innerHTML = `
-      <span class="sym-box">
-        <svg class="sym-check" viewBox="0 0 10 10" fill="none">
-          <polyline points="1.5,5.5 4,8 8.5,2" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </span>
-      <span class="sym-label">${sym}</span>`;
+    item.innerHTML = `<span class="sym-box"><svg class="sym-check" viewBox="0 0 10 10" fill="none">
+      <polyline points="1.5,5.5 4,8 8.5,2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg></span><span class="sym-label">${sym}</span>`;
     item.addEventListener("click", () => {
-      if (state.tr_resolved.has(i)) { state.tr_resolved.delete(i); item.classList.remove("checked"); }
-      else { state.tr_resolved.add(i); item.classList.add("checked"); }
+      state.tr_resolved.has(i) ? (state.tr_resolved.delete(i), item.classList.remove("checked"))
+                                : (state.tr_resolved.add(i),   item.classList.add("checked"));
       upd();
     });
-    container.appendChild(item);
+    c.appendChild(item);
   });
   upd();
 }
 
-// Offline ekrani
 function renderOffline() {
-  state.offline_date = "";
-  state.offline_time = "";
-  const grid = el("date-grid");
-  if (!grid) return;
+  state.offline_date = ""; state.offline_time = "";
+  const grid = el("date-grid"); if (!grid) return;
   grid.innerHTML = "";
-
   getAvailableDates(6).forEach(({ iso, label, wd }) => {
     const btn = document.createElement("div");
     btn.className = "date-btn";
@@ -564,8 +410,6 @@ function renderOffline() {
     });
     grid.appendChild(btn);
   });
-
-  // Vaqt tugmalari — har render da listener qayta bog'lanmasligi uchun clone
   document.querySelectorAll(".time-btn").forEach(btn => {
     const clone = btn.cloneNode(true);
     btn.parentNode.replaceChild(clone, btn);
@@ -580,14 +424,95 @@ function renderOffline() {
 
 function updateOfflineText() {
   const c = el("offline-confirm-text");
-  if (!c) return;
-  if (state.offline_date && state.offline_time) {
+  if (c && state.offline_date && state.offline_time) {
     c.textContent = `📅 ${state.offline_date}  ⏰ ${state.offline_time}`;
     c.style.color = "var(--gold-soft)";
   }
 }
 
-/* ── FINAL EKRAN ────────────────────────────────────────────────────────────── */
+function renderAfterListen() {
+  const remaining = state.remaining_labels;
+  const sub = el("after-listen-sub");
+  if (sub) sub.textContent = `${state.session_num}-seans • Qaysi alomatlar yaxshilandi?`;
+  const sessions = loadSessions();
+  const allResolved = new Set(sessions.flatMap(s => s.resolved || []));
+  const total = state.all_labels.length || getAllLabels().length;
+  const stats = el("session-stats");
+  if (stats) stats.innerHTML = `
+    <div class="track-stat"><span class="track-stat-label">Jami seans</span><span class="track-stat-val">${state.session_num}</span></div>
+    <div class="track-stat"><span class="track-stat-label">Dastlabki alomatlar</span><span class="track-stat-val">${total}</span></div>
+    <div class="track-stat"><span class="track-stat-label">Hozircha yoʻqolgan</span><span class="track-stat-val track-resolved">${allResolved.size}</span></div>
+    <div class="track-stat"><span class="track-stat-label">Qolgan</span><span class="track-stat-val track-remaining">${remaining.length}</span></div>`;
+  state.after_resolved = new Set();
+  const c = el("after-symptom-list"); if (!c) return;
+  c.innerHTML = "";
+  const countEl = el("after-resolved-count");
+  function upd() {
+    if (countEl) countEl.textContent = state.after_resolved.size
+      ? `${state.after_resolved.size} ta yaxshilandi` : "Hech narsa belgilanmadi";
+  }
+  if (!remaining.length) {
+    c.innerHTML = `<div class="info-box" style="background:rgba(82,183,136,.15);border-color:rgba(82,183,136,.3);color:var(--emerald-light)">🎉 Barcha alomatlar yoʻqoldi! Allohga shukr!</div>`;
+    upd(); return;
+  }
+  remaining.forEach((sym, i) => {
+    const item = document.createElement("div");
+    item.className = "symptom-item";
+    item.innerHTML = `<span class="sym-box"><svg class="sym-check" viewBox="0 0 10 10" fill="none">
+      <polyline points="1.5,5.5 4,8 8.5,2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg></span><span class="sym-label">${sym}</span>`;
+    item.addEventListener("click", () => {
+      state.after_resolved.has(i) ? (state.after_resolved.delete(i), item.classList.remove("checked"))
+                                   : (state.after_resolved.add(i),   item.classList.add("checked"));
+      upd();
+    });
+    c.appendChild(item);
+  });
+  upd();
+}
+
+function renderHistory() {
+  const c = el("history-list"); if (!c) return;
+  c.innerHTML = "";
+  const sessions = loadSessions();
+  const total = state.all_labels.length || getAllLabels().length;
+  if (!sessions.length) {
+    c.innerHTML = `<div class="history-empty">Hali hech qanday seans boʻlmagan.<br>Ruqiyani tinglashni boshlang 🎧</div>`;
+    return;
+  }
+  const allResolved = new Set(sessions.flatMap(s => s.resolved || []));
+  const pct = total > 0 ? Math.round(allResolved.size / total * 100) : 0;
+  c.innerHTML = `<div class="overall-progress-card">
+    <div class="overall-big-num">${pct}%</div>
+    <div class="overall-label">Umumiy yaxshilanish • ${allResolved.size} ta alomat yoʻqoldi</div>
+    <div class="progress-bar" style="margin-top:10px"><div class="progress-fill" style="width:${pct}%"></div></div>
+  </div>`;
+  [...sessions].reverse().forEach((s, idx) => {
+    const num = sessions.length - idx;
+    const resolved = s.resolved || [];
+    const rem = s.remaining || [];
+    const date = s.date ? new Date(s.date).toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) : "—";
+    const sPct = total > 0 ? Math.round(resolved.length / total * 100) : 0;
+    const card = document.createElement("div");
+    card.className = "history-card";
+    card.innerHTML = `
+      <div class="history-card-header">
+        <span class="history-session-num">🎧 ${num}-seans</span>
+        <span class="history-date">${date}</span>
+      </div>
+      <div class="history-progress">
+        <div class="history-progress-bar"><div class="history-progress-fill" style="width:${sPct}%"></div></div>
+        <span class="history-progress-label">+${resolved.length} yoʻqoldi</span>
+      </div>
+      ${resolved.length ? `<div style="font-size:.72rem;color:var(--tg-hint);margin-bottom:4px">✅ Yaxshilandi:</div>
+        <div class="history-tags">${resolved.map(r=>`<span class="history-tag-resolved">${r}</span>`).join("")}</div>` : ""}
+      ${rem.length ? `<div style="font-size:.72rem;color:var(--tg-hint);margin:6px 0 4px">🔴 Qolgan:</div>
+        <div class="history-tags">${rem.slice(0,5).map(r=>`<span class="history-tag-remaining">${r}</span>`).join("")}${rem.length>5?`<span class="history-tag-remaining">+${rem.length-5} ta</span>`:""}</div>`
+        : `<div class="info-box" style="margin-top:8px;padding:8px 12px;font-size:.8rem">🎉 Shu seansda barcha alomatlar yoʻqoldi!</div>`}`;
+    c.appendChild(card);
+  });
+}
+
 function showFinal({ icon="✅", title="", body="", extra="" } = {}) {
   const fi = el("final-icon"); if (fi) fi.textContent = icon;
   const ft = el("final-title"); if (ft) ft.textContent = title;
@@ -596,342 +521,11 @@ function showFinal({ icon="✅", title="", body="", extra="" } = {}) {
   go("s-final");
 }
 
-/* ── NAVIGATSIYA: data-goto tugmalari ─────────────────────────────────────── */
-// Barcha data-goto atributli elementlar uchun universal listener
-document.addEventListener("click", e => {
-  const target = e.target.closest("[data-goto]");
-  if (!target) return;
-  const dest = target.dataset.goto;
-
-  // Roʻyxatdan oʻtish tekshiruvi
-  if (["s-uyqu","s-ongi","s-xonadon","s-complaint","s-result",
-       "s-ruqiya-intro","s-ruqiya-listen","s-reaction-words",
-       "s-during-symptoms","s-tracking","s-offline"].includes(dest)) {
-    if (!state.registered) { go("s-register"); return; }
-  }
-  go(dest);
-});
-
-/* ── REGISTER ────────────────────────────────────────────────────────────────── */
-el("btn-reg-submit")?.addEventListener("click", () => {
-  const name   = el("reg-name")?.value.trim();
-  const age    = el("reg-age")?.value.trim();
-  const region = el("reg-region")?.value.trim();
-  const phone  = el("reg-phone")?.value.trim();
-
-  if (!name || name.length < 3) return showFieldError("reg-error", "Ism kamida 3 ta harf boʻlsin");
-  if (!age || isNaN(age) || +age < 5 || +age > 120) return showFieldError("reg-error", "Yoshni toʻgʻri kiriting (5–120)");
-  if (!region) return showFieldError("reg-error", "Viloyatni kiriting");
-  if (!phone)  return showFieldError("reg-error", "Telefon raqamini kiriting");
-
-  // Darhol state ga saqlaymiz — API javobini kutmaymiz
-  state.registered = true;
-  state.reg_data   = { full_name: name, age: +age, region, phone };
-
-  // API ga yuborish (fonda, bloklamasdan)
-  apiFetch("/api/register", "POST", { full_name: name, age: +age, region, phone })
-    .then(res => {
-      if (res?.ok) {
-        state.tg_id = res.user?.telegram_id;
-        console.log("✅ Roʻyxatdan oʻtish saqlandi");
-      } else {
-        console.warn("⚠️ API saqlashda xatolik, keyinroq uriniladi");
-      }
-    })
-    .catch(e => console.warn("Register API xatolik:", e));
-
-  // Darhol keyingi ekranga o'tamiz
-  go("s-uyqu");
-});
-
-/* ── COMPLAINT ───────────────────────────────────────────────────────────────── */
-el("btn-complaint-submit")?.addEventListener("click", () => {
-  const txt = el("complaint-text")?.value.trim();
-  if (!txt || txt.length < 10)
-    return showFieldError("complaint-error", "Batafsiroq tasvirlab bering (kamida 10 belgi)");
-
-  state.complaint = txt;
-  state.all_labels = getAllLabels();
-  go("s-loading");
-
-  // Loading matnini animatsiya qilish
-  const loadingMsgs = [
-    ["Tahlil qilinmoqda...",    "Biroz sabr qiling"],
-    ["Ma'lumotlar tayyorlanmoqda...", "10-15 soniya ketishi mumkin"],
-    ["Javob shakllantirilmoqda...", "Deyarli tayyor..."],
-  ];
-  let msgIdx = 0;
-  const loadingInterval = setInterval(() => {
-    msgIdx = (msgIdx + 1) % loadingMsgs.length;
-    const lt = document.getElementById("loading-text");
-    const ls = document.getElementById("loading-sub");
-    if (lt) lt.textContent = loadingMsgs[msgIdx][0];
-    if (ls) ls.textContent = loadingMsgs[msgIdx][1];
-  }, 4000);
-
-  const analysisPayload = {
-    uyqu_symptoms:    getLabels(UYQU_SYMPTOMS,    state.uyqu_selected),
-    ongi_symptoms:    getLabels(ONGI_SYMPTOMS,    state.ongi_selected),
-    xonadon_symptoms: getLabels(XONADON_SYMPTOMS, state.xonadon_selected),
-    all_symptoms:     state.all_labels,
-    complaint:        txt,
-  };
-
-  // Anthropic API orqali tahlil olish (bot kabi)
-  runAnalysis(analysisPayload).then(answer => {
-    clearInterval(loadingInterval);
-    state.rag_answer = answer;
-    go("s-result");
-  }).catch(() => {
-    clearInterval(loadingInterval);
-    state.rag_answer = "";
-    go("s-result");
-  });
-});
-
-/* ZIKR bo'limi olib tashlandi */
-
-/* ── RUQIYA ──────────────────────────────────────────────────────────────────── */
-el("btn-ruqiya-listen")?.addEventListener("click", () => go("s-ruqiya-listen"));
-
-el("btn-ruqiya-11kun")?.addEventListener("click",  () => go("s-ruqiya-check"));
-el("btn-ruqiya-check")?.addEventListener("click",  () => go("s-ruqiya-check"));
-
-// 11 kun taʼsir tugmalari
-document.querySelectorAll(".effect-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const effect = btn.dataset.effect;
-    sendToBot("ruqiya_effect", { effect });
-
-    if (effect === "yes") {
-      showFinal({
-        icon:"✅", title:"Allohga shukr!",
-        body:"Ruqiya taʼsir qilmoqda — davom eting!\nAlomatlaringizni kuzatib boring.",
-      });
-    } else if (effect === "continue") {
-      showFinal({
-        icon:"⏳", title:"Davo jarayoni davom etmoqda",
-        body:"Ruqiyani davom ettiring. 11 kundan keyin qayta tekshiring.",
-      });
-    } else {
-      // effect === "no" — shaxsan tashrif tavsiya
-      showFinal({
-        icon:"🏥", title:"Shaxsan tashrif tavsiya etiladi",
-        body:"Onlayn ruqiya yordam bermagan boʻlsa, shaxsiy offlayn ruqiya seansiga yozilishingiz tavsiya etiladi.\n\n📍 Yangi Toshkent, Gulzor MFY\n🕐 Jumaday tashqari har kuni: 07:00 va 20:00",
-        extra:`<button class="btn btn-primary" onclick="go('s-offline')" style="margin-top:12px">📅 Tashrif yozilish</button>`,
-      });
-    }
-  });
-});
-
-/* ── REAKTSIYA + DURING SYMPTOMS ─────────────────────────────────────────────── */
-el("btn-ds-save")?.addEventListener("click", () => {
-  const rwLabels = getLabels(REACTION_WORDS,  state.rw_selected);
-  const dsLabels = getLabels(DURING_SYMPTOMS, state.ds_selected);
-
-  // API orqali sessiya saqlash
-  apiFetch("/api/session", "POST", {
-    analysis_id:     state.analysis_id || null,
-    session_type:    "online",
-    reaction_words:  rwLabels,
-    during_symptoms: dsLabels,
-  }).then(r => {
-    if (r?.ok) state.ruqiya_session_id = r.session_id;
-  });
-
-  const note = (rwLabels.length || dsLabels.length)
-    ? "Bu maʼlumotlar — davo jarayoni borligidan dalolat beradi.\nAlloh shifo bersin! 🤲"
-    : "Alloh shifo bersin! 🤲";
-
-  showFinal({
-    icon:"✅",
-    title:"Ruqiya natijasi saqlandi",
-    body:"11 kun davomida tong va kechqurun ruqiyani tinglang.\n\n" + note,
-    extra: [
-      rwLabels.length ? `<div style="margin-bottom:8px"><div class="card-title" style="font-size:.72rem;letter-spacing:.1em;color:var(--gold);margin-bottom:6px">🔴 REAKTSIYA KALIMLARI</div><div class="sym-summary">${tagsHtml(rwLabels)}</div></div>` : "",
-      dsLabels.length ? `<div><div class="card-title" style="font-size:.72rem;letter-spacing:.1em;color:var(--gold);margin-bottom:6px">🟡 RUQIYA PAYTIDAGI ALOMATLAR</div><div class="sym-summary">${tagsHtml(dsLabels)}</div></div>` : "",
-    ].join(""),
-  });
-});
-
-/* ── TRACKING ────────────────────────────────────────────────────────────────── */
-el("btn-track-save")?.addEventListener("click", () => {
-  const all      = state.all_labels.length ? state.all_labels : getAllLabels();
-  const resolved  = all.filter((_, i) => state.tr_resolved.has(i));
-  const remaining = all.filter((_, i) => !state.tr_resolved.has(i));
-  const status    = !remaining.length || resolved.length > remaining.length ? "better" : "same";
-
-  apiFetch("/api/tracking", "POST", {
-    tracking_type:      "online",
-    resolved_symptoms:  resolved,
-    remaining_symptoms: remaining,
-    overall_status:     status,
-    analysis_id:        state.analysis_id || null,
-  });
-
-  showFinal({
-    icon: status === "better" ? "📈" : "📊",
-    title:"Kuzatuv saqlandi",
-    body: status === "better"
-      ? "Allohga shukr! Ahvolingiz yaxshilanmoqda. ✅"
-      : "Ruqiyani davom ettiring. ⏳",
-    extra: `
-      <div style="margin-bottom:8px">
-        <div class="card-title" style="font-size:.72rem;letter-spacing:.1em;color:var(--gold);margin-bottom:6px">✅ YOʻQOLGAN ALOMATLAR (${resolved.length})</div>
-        <div class="sym-summary">${tagsHtml(resolved)}</div>
-      </div>
-      <div>
-        <div class="card-title" style="font-size:.72rem;letter-spacing:.1em;color:var(--gold);margin-bottom:6px">🔴 QOLGAN ALOMATLAR (${remaining.length})</div>
-        <div class="sym-summary">${tagsHtml(remaining)}</div>
-      </div>
-      ${remaining.length ? `<button class="btn btn-secondary" onclick="go('s-offline')" style="margin-top:12px">📅 Offlayn tashrif</button>` : ""}`,
-  });
-});
-
-/* ── OFFLINE ─────────────────────────────────────────────────────────────────── */
-el("btn-offline-confirm")?.addEventListener("click", () => {
-  if (!state.offline_date) return showFieldError("offline-error", "Sanani tanlang");
-  if (!state.offline_time) return showFieldError("offline-error", "Vaqtni tanlang");
-
-  apiFetch("/api/offline", "POST", {
-    visit_date:  state.offline_date,
-    visit_time:  state.offline_time,
-    analysis_id: state.analysis_id || null,
-  });
-
-  showFinal({
-    icon:"✅",
-    title:"Tashrif tasdiqlandi!",
-    body:`📅 ${state.offline_date}  ⏰ ${state.offline_time}\n📍 Yangi Toshkent, Gulzor MFY\n\nMenejer siz bilan bogʻlanadi.`,
-  });
-});
-
-/* ── MA'LUMOTLAR ─────────────────────────────────────────────────────────────── */
-document.querySelectorAll(".info-card-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const key  = btn.dataset.info;
-    const data = MALUMOT_DATA[key];
-    if (!data) return;
-    const c = el("malumot-content");
-    if (c) c.innerHTML = `
-      <div class="result-title">${data.title}</div>
-      <div class="result-body" style="white-space:pre-line">${data.body}</div>`;
-
-    const mapWrap  = el("map-container");
-    const mapFrame = el("map-iframe");
-    if (mapWrap && mapFrame) {
-      if (data.map) {
-        mapFrame.src = `https://maps.google.com/maps?q=${data.lat},${data.lon}&z=16&output=embed`;
-        mapWrap.style.display = "block";
-      } else {
-        mapWrap.style.display = "none";
-      }
-    }
-    go("s-malumot-detail");
-  });
-});
-
-/* ── SAVOL-JAVOB ─────────────────────────────────────────────────────────────── */
-el("btn-savol-submit")?.addEventListener("click", () => {
-  const txt = el("savol-text")?.value.trim();
-  if (!txt || txt.length < 5) return showFieldError("savol-error", "Savolingizni kiriting");
-  apiFetch("/api/savol", "POST", { question: txt });
-  el("savol-text").value = "";
-  showFinal({
-    icon:"📨",
-    title:"Savolingiz yuborildi!",
-    body:"Menejerimiz yaqin orada javob beradi.\nBogʻlanish uchun: @manager_username",
-  });
-});
-
-/* ── YOPISH TUGMASI ──────────────────────────────────────────────────────────── */
-el("btn-close")?.addEventListener("click", () => { if (tg) tg.close(); });
-
-/* ── MENU KARTALAR ───────────────────────────────────────────────────────────── */
-// data-goto bilan ishlaydi, lekin "s-uyqu" bosilganda register tekshiruvi kerak
-// Bu yuqoridagi universal listener orqali ishlaydi
-
-
-/* ── AUDIO PLAYER ─────────────────────────────────────────────────────────── */
-// AUDIO_URL — env dan yoki bot orqali berilgan URL
-// Bot admin audio faylini yuklaydi, URL ni env AUDIO_RUQIYA_URL da saqlanadi
-const AUDIO_URL = (typeof RUQIYA_AUDIO_URL !== "undefined") ? RUQIYA_AUDIO_URL : "";
-
-function initAudioPlayer() {
-  const audio     = document.getElementById("ruqiya-audio");
-  const playBtn   = document.getElementById("audio-play-btn");
-  const playIcon  = document.getElementById("audio-play-icon");
-  const pauseIcon = document.getElementById("audio-pause-icon");
-  const progress  = document.getElementById("audio-progress");
-  const timeEl    = document.getElementById("audio-time");
-  const noFile    = document.getElementById("audio-no-file");
-
-  if (!audio || !playBtn) return;
-
-  if (!AUDIO_URL) {
-    if (noFile) noFile.style.display = "block";
-    playBtn.style.opacity = "0.3";
-    playBtn.style.pointerEvents = "none";
-    return;
-  }
-
-  audio.src = AUDIO_URL;
-
-  function fmt(s) {
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m}:${sec.toString().padStart(2,"0")}`;
-  }
-
-  audio.addEventListener("timeupdate", () => {
-    if (!audio.duration) return;
-    const pct = (audio.currentTime / audio.duration) * 100;
-    if (progress) progress.style.width = pct + "%";
-    if (timeEl)   timeEl.textContent = `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
-  });
-
-  audio.addEventListener("ended", () => {
-    playIcon.style.display  = "";
-    pauseIcon.style.display = "none";
-    if (progress) progress.style.width = "0%";
-
-    // Seans tugadi — alomatlar tanlov ekraniga o'tamiz
-    onAudioEnded();
-  });
-
-  playBtn.addEventListener("click", () => {
-    if (audio.paused) {
-      audio.play();
-      playIcon.style.display  = "none";
-      pauseIcon.style.display = "";
-    } else {
-      audio.pause();
-      playIcon.style.display  = "";
-      pauseIcon.style.display = "none";
-    }
-  });
-
-  // Progress bar click — seek
-  const bar = document.querySelector(".audio-progress-bar");
-  if (bar) {
-    bar.addEventListener("click", e => {
-      if (!audio.duration) return;
-      const rect = bar.getBoundingClientRect();
-      const pct  = (e.clientX - rect.left) / rect.width;
-      audio.currentTime = pct * audio.duration;
-    });
-  }
-}
-
-
-/* ── TAHLIL — /api/analyze orqali (GROQ kaliti faqat serverda) ──────────── */
-async function runAnalysis(payload) {
-  const { all_symptoms, complaint } = payload;
-
-  const FALLBACK = `🤲 Tasvirlangan belgilar ruhiy va maʼnaviy jihatdan eʼtibor talab qiladi.
+/* ── TAHLIL (API orqali) ───────────────────────────────────────── */
+const FALLBACK_ANSWER = `🤲 Tasvirlangan belgilar ruhiy va maʼnaviy jihatdan eʼtibor talab qiladi.
 
 🔍 Mumkin boʻlgan sabablar:
-Belgilangan alomatlar (${all_symptoms.length} ta) ruhiy va maʼnaviy jihatdan koʻrib chiqilishi lozim.
+Belgilangan alomatlar ruhiy va maʼnaviy jihatdan koʻrib chiqilishi lozim.
 
 ✅ Amaliy tavsiyalar:
   - Oyatul-Kursiy, Falaq va Nos suralarini oʻqing
@@ -942,110 +536,330 @@ Belgilangan alomatlar (${all_symptoms.length} ta) ruhiy va maʼnaviy jihatdan ko
 Agar oʻzgarish sezilmasa, shaxsiy offline ruqiya seansiga yozilishingiz mumkin.
 Alloh taolo shifo va baraka bersin.`;
 
-  // API_BASE sozlanmagan — darhol FALLBACK
-  if (!API_BASE || API_BASE === "SHU_YERGA_RAILWAY_URL_QOYING") {
-    console.warn("API_BASE_URL sozlanmagan — FALLBACK ishlatiladi");
-    return FALLBACK;
-  }
-
-  // 15 soniya timeout — API javob bermasa FALLBACK
-  const timeoutPromise = new Promise(resolve =>
-    setTimeout(() => resolve(null), 15000)
-  );
-
+async function runAnalysis(payload) {
+  if (!API_BASE) return FALLBACK_ANSWER;
+  const timeoutP = new Promise(r => setTimeout(() => r(null), 15000));
   try {
-    const fetchPromise = apiFetch("/api/analyze", "POST", payload);
-    const res = await Promise.race([fetchPromise, timeoutPromise]);
-
+    const res = await Promise.race([apiFetch("/api/analyze","POST",payload), timeoutP]);
     if (res?.ok && res.answer) {
       if (res.analysis_id) state.analysis_id = res.analysis_id;
       return res.answer;
     }
-    console.warn("API javob bermadi yoki xatolik — FALLBACK");
-    return FALLBACK;
+    return FALLBACK_ANSWER;
   } catch(e) {
-    console.error("runAnalysis xatolik:", e);
-    return FALLBACK;
+    return FALLBACK_ANSWER;
   }
 }
 
+/* ── AUDIO PLAYER ──────────────────────────────────────────────── */
+function initAudioPlayer() {
+  const audio     = el("ruqiya-audio");
+  const playBtn   = el("audio-play-btn");
+  const playIcon  = el("audio-play-icon");
+  const pauseIcon = el("audio-pause-icon");
+  const progress  = el("audio-progress");
+  const timeEl    = el("audio-time");
+  const noFile    = el("audio-no-file");
+  if (!audio || !playBtn) return;
+  if (!AUDIO_SRC) { if (noFile) noFile.style.display="block"; playBtn.style.opacity="0.3"; playBtn.style.pointerEvents="none"; return; }
+  audio.src = AUDIO_SRC;
+  function fmt(s) { const m=Math.floor(s/60),sec=Math.floor(s%60); return `${m}:${String(sec).padStart(2,"0")}`; }
+  audio.addEventListener("timeupdate", () => {
+    if (!audio.duration) return;
+    const pct = audio.currentTime / audio.duration * 100;
+    if (progress) progress.style.width = pct + "%";
+    if (timeEl)   timeEl.textContent = `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
+  });
+  audio.addEventListener("ended", () => {
+    if (playIcon)  playIcon.style.display  = "";
+    if (pauseIcon) pauseIcon.style.display = "none";
+    if (progress)  progress.style.width    = "0%";
+    state.session_num += 1;
+    state.after_resolved = new Set();
+    if (!state.remaining_labels.length) {
+      state.remaining_labels = [...(state.all_labels.length ? state.all_labels : getAllLabels())];
+    }
+    go("s-after-listen");
+  });
+  playBtn.addEventListener("click", () => {
+    if (audio.paused) {
+      audio.play();
+      if (playIcon)  playIcon.style.display  = "none";
+      if (pauseIcon) pauseIcon.style.display = "";
+    } else {
+      audio.pause();
+      if (playIcon)  playIcon.style.display  = "";
+      if (pauseIcon) pauseIcon.style.display = "none";
+    }
+  });
+  const bar = document.querySelector(".audio-progress-bar");
+  if (bar) bar.addEventListener("click", e => {
+    if (!audio.duration) return;
+    const rect = bar.getBoundingClientRect();
+    audio.currentTime = (e.clientX - rect.left) / rect.width * audio.duration;
+  });
+}
 
-/* ── BOSHLASH ────────────────────────────────────────────────────────────────── */
+/* ── SERVER SYNC ───────────────────────────────────────────────── */
+async function loadUserOnStart() {
+  if (!API_BASE) return;
+  const initData = getInitData();
+  if (initData) {
+    try {
+      const match = initData.match(/user=([^&]+)/);
+      if (match) state.tg_id = JSON.parse(decodeURIComponent(match[1])).id || null;
+    } catch(e) { console.warn("initData parse:", e); }
+  }
+  if (!state.tg_id) return;
+  try {
+    const [userRes, analysisRes, trackRes] = await Promise.all([
+      apiFetch(`/api/user/${state.tg_id}`),
+      apiFetch(`/api/analysis/${state.tg_id}`),
+      apiFetch(`/api/tracking/${state.tg_id}`),
+    ]);
+    if (userRes?.ok && userRes.user) {
+      state.registered = true;
+      if (analysisRes?.ok && analysisRes.analysis) {
+        state.analysis_id = analysisRes.analysis.id;
+        state.all_labels  = analysisRes.analysis.symptoms || [];
+      }
+      if (trackRes?.ok && trackRes.history?.length) {
+        state.remaining_labels = trackRes.history[0].remaining_symptoms || [];
+        state.session_num      = trackRes.history.length;
+        saveSessions(trackRes.history.map((h,i) => ({
+          session_num: i+1, date: h.tracked_at,
+          resolved: h.resolved_symptoms || [], remaining: h.remaining_symptoms || [],
+          total: state.all_labels.length,
+        })));
+      }
+    }
+  } catch(e) { console.warn("loadUserOnStart:", e); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DOMContentLoaded — BARCHA LISTENERS SHU YERDA
+   ═══════════════════════════════════════════════════════════════ */
 document.addEventListener("DOMContentLoaded", () => {
-  // Foydalanuvchini Telegram ID orqali yuklash
+
+  /* Telegram back button */
+  if (tg) tg.BackButton.onClick(() => { const t = BACK[currentScreen]; if (t) go(t); });
+
+  /* Nativе Orqaga tugmasi */
+  el("btn-back-native")?.addEventListener("click", () => { const t = BACK[currentScreen]; if (t) go(t); });
+
+  /* data-goto universal listener */
+  document.addEventListener("click", e => {
+    const target = e.target.closest("[data-goto]");
+    if (!target) return;
+    const dest = target.dataset.goto;
+    if (requireReg(dest)) return;
+    go(dest);
+  });
+
+  /* Menu kartalar */
+  document.querySelectorAll(".menu-card[data-goto]").forEach(card => {
+    card.addEventListener("click", () => {
+      if (requireReg(card.dataset.goto)) return;
+      go(card.dataset.goto);
+    });
+  });
+
+  /* REGISTER */
+  el("btn-reg-submit")?.addEventListener("click", () => {
+    const name   = el("reg-name")?.value.trim();
+    const age    = el("reg-age")?.value.trim();
+    const region = el("reg-region")?.value.trim();
+    const phone  = el("reg-phone")?.value.trim();
+    if (!name || name.length < 3) return showErr("reg-error", "Ism kamida 3 ta harf boʻlsin");
+    if (!age || isNaN(age) || +age < 5 || +age > 120) return showErr("reg-error", "Yoshni toʻgʻri kiriting");
+    if (!region) return showErr("reg-error", "Viloyatni kiriting");
+    if (!phone)  return showErr("reg-error", "Telefon raqamini kiriting");
+    state.registered = true;
+    state.reg_data   = { full_name:name, age:+age, region, phone };
+    apiFetch("/api/register","POST",state.reg_data).then(r => {
+      if (r?.ok) state.tg_id = r.user?.telegram_id;
+    });
+    go("s-uyqu");
+  });
+
+  /* COMPLAINT / TAHLIL */
+  el("btn-complaint-submit")?.addEventListener("click", () => {
+    const txt = el("complaint-text")?.value.trim();
+    if (!txt || txt.length < 10) return showErr("complaint-error", "Kamida 10 ta belgi kiriting");
+    state.complaint  = txt;
+    state.all_labels = getAllLabels();
+    go("s-loading");
+
+    const payload = {
+      uyqu_symptoms:    getLabels(UYQU_SYMPTOMS,    state.uyqu_selected),
+      ongi_symptoms:    getLabels(ONGI_SYMPTOMS,    state.ongi_selected),
+      xonadon_symptoms: getLabels(XONADON_SYMPTOMS, state.xonadon_selected),
+      all_symptoms:     state.all_labels,
+      complaint:        txt,
+    };
+
+    // Loading matnini o'zgartirish
+    const msgs = [
+      ["Tahlil qilinmoqda...","Biroz sabr qiling"],
+      ["Maʼlumotlar tahlil qilinmoqda...","10-15 soniya ketishi mumkin"],
+      ["Javob shakllantirilmoqda...","Deyarli tayyor..."],
+    ];
+    let mi = 0;
+    const iv = setInterval(() => {
+      mi = (mi+1) % msgs.length;
+      const lt = el("loading-text"), ls = el("loading-sub");
+      if (lt) lt.textContent = msgs[mi][0];
+      if (ls) ls.textContent = msgs[mi][1];
+    }, 4000);
+
+    runAnalysis(payload).then(answer => {
+      clearInterval(iv);
+      state.rag_answer = answer;
+      go("s-result");
+    }).catch(() => {
+      clearInterval(iv);
+      state.rag_answer = FALLBACK_ANSWER;
+      go("s-result");
+    });
+  });
+
+  /* RUQIYA */
+  el("btn-ruqiya-listen")?.addEventListener("click", () => go("s-ruqiya-listen"));
+  el("btn-ruqiya-11kun")?.addEventListener("click",  () => go("s-ruqiya-check"));
+  el("btn-ruqiya-check")?.addEventListener("click",  () => go("s-ruqiya-check"));
+
+  /* 11 kun effect */
+  document.querySelectorAll(".effect-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const effect = btn.dataset.effect;
+      apiFetch("/api/tracking","POST",{ tracking_type:"online", overall_status: effect==="yes"?"better":effect==="no"?"worse":"same", resolved_symptoms:[], remaining_symptoms:[], analysis_id: state.analysis_id });
+      if (effect === "yes") {
+        showFinal({ icon:"✅", title:"Allohga shukr!", body:"Ruqiya taʼsir qilmoqda — davom eting!\nAlomatlaringizni kuzatib boring." });
+      } else if (effect === "continue") {
+        showFinal({ icon:"⏳", title:"Davo jarayoni davom etmoqda", body:"Ruqiyani davom ettiring. 11 kundan keyin qayta tekshiring." });
+      } else {
+        showFinal({
+          icon:"🏥", title:"Shaxsan tashrif tavsiya etiladi",
+          body:"Onlayn ruqiya yordam bermagan boʻlsa, shaxsiy offline ruqiya seansiga yoziling.\n\n📍 Yangi Toshkent, Gulzor MFY\n🕐 Jumaday tashqari har kuni: 07:00 va 20:00",
+          extra:`<button class="btn btn-primary" onclick="go('s-offline')" style="margin-top:12px">📅 Tashrif yozilish</button>`,
+        });
+      }
+    });
+  });
+
+  /* REACTION WORDS — ds-save */
+  el("btn-ds-save")?.addEventListener("click", () => {
+    const rwLabels = getLabels(REACTION_WORDS,  state.rw_selected);
+    const dsLabels = getLabels(DURING_SYMPTOMS, state.ds_selected);
+    apiFetch("/api/session","POST",{
+      analysis_id: state.analysis_id, session_type:"online",
+      reaction_words: rwLabels, during_symptoms: dsLabels,
+    }).then(r => { if (r?.ok) state.ruqiya_session_id = r.session_id; });
+    showFinal({
+      icon:"✅", title:"Ruqiya natijasi saqlandi",
+      body:"11 kun davomida tong va kechqurun tinglang.\nAlloh shifo bersin! 🤲",
+      extra: [
+        rwLabels.length ? `<div style="margin-bottom:8px"><div class="card-title" style="font-size:.72rem;color:var(--gold);margin-bottom:6px">🔴 REAKTSIYA KALIMLARI</div><div class="sym-summary">${tagsHtml(rwLabels)}</div></div>` : "",
+        dsLabels.length ? `<div><div class="card-title" style="font-size:.72rem;color:var(--gold);margin-bottom:6px">🟡 RUQIYA PAYTIDAGI ALOMATLAR</div><div class="sym-summary">${tagsHtml(dsLabels)}</div></div>` : "",
+      ].join(""),
+    });
+  });
+
+  /* TRACKING save */
+  el("btn-track-save")?.addEventListener("click", () => {
+    const all = state.all_labels.length ? state.all_labels : getAllLabels();
+    const resolved  = all.filter((_,i) => state.tr_resolved.has(i));
+    const remaining = all.filter((_,i) => !state.tr_resolved.has(i));
+    const status    = !remaining.length || resolved.length > remaining.length ? "better" : "same";
+    apiFetch("/api/tracking","POST",{
+      tracking_type:"online", resolved_symptoms:resolved,
+      remaining_symptoms:remaining, overall_status:status,
+      analysis_id: state.analysis_id,
+    });
+    showFinal({
+      icon: status==="better"?"📈":"📊",
+      title:"Kuzatuv saqlandi",
+      body: status==="better" ? "Allohga shukr! Ahvolingiz yaxshilanmoqda. ✅" : "Ruqiyani davom ettiring. ⏳",
+      extra:`
+        <div style="margin-bottom:8px"><div class="card-title" style="font-size:.72rem;color:var(--gold);margin-bottom:6px">✅ YOʻQOLGAN (${resolved.length})</div><div class="sym-summary">${tagsHtml(resolved)}</div></div>
+        <div><div class="card-title" style="font-size:.72rem;color:var(--gold);margin-bottom:6px">🔴 QOLGAN (${remaining.length})</div><div class="sym-summary">${tagsHtml(remaining)}</div></div>
+        ${remaining.length?`<button class="btn btn-secondary" onclick="go('s-offline')" style="margin-top:12px">📅 Offlayn tashrif</button>`:""}`,
+    });
+  });
+
+  /* AFTER LISTEN save */
+  el("btn-after-save")?.addEventListener("click", () => {
+    const remaining = state.remaining_labels;
+    const resolved  = [...state.after_resolved].map(i => remaining[i]).filter(Boolean);
+    const newRem    = remaining.filter((_,i) => !state.after_resolved.has(i));
+    state.remaining_labels = newRem;
+    const status = !newRem.length || resolved.length > 0 ? "better" : "same";
+    const sessionData = { session_num:state.session_num, date:new Date().toISOString(), resolved, remaining:newRem, total:state.all_labels.length||getAllLabels().length };
+    addSession(sessionData);
+    apiFetch("/api/tracking","POST",{
+      tracking_type:"online", session_num:state.session_num,
+      resolved_symptoms:resolved, remaining_symptoms:newRem,
+      overall_status:status, analysis_id:state.analysis_id,
+      ruqiya_session_id:state.ruqiya_session_id,
+    });
+    if (!newRem.length) {
+      showFinal({ icon:"🎉", title:"Barcha alomatlar yoʻqoldi!", body:`Allohga shukr! Siz ${state.session_num} seans tingladi.\nAlloh taolo Sizi Oʻz rahmatida asrasin! 🤲`,
+        extra:`<button class="btn btn-secondary" onclick="go('s-history')" style="margin-top:12px">📈 Tarixni koʻrish</button>` });
+    } else if (resolved.length) {
+      showFinal({ icon:"📈", title:`${state.session_num}-seans saqlandi!`,
+        body:`✅ ${resolved.length} ta alomat yaxshilandi\n🔴 ${newRem.length} ta alomat qoldi\n\nRuqiyani tinglashni davom eting. Alloh shifo bersin! 🤲`,
+        extra:`<button class="btn btn-primary" onclick="go('s-ruqiya-listen')" style="margin-top:12px">🎧 Keyingi seans</button>
+               <button class="btn btn-secondary" onclick="go('s-history')" style="margin-top:8px">📈 Tarixni koʻrish</button>` });
+    } else {
+      showFinal({ icon:"⏳", title:`${state.session_num}-seans saqlandi`,
+        body:"Bu seansda oʻzgarish sezilmadi. Davom eting — ruqiya vaqt talab qiladi.\n\nAlloh shifo bersin! 🤲",
+        extra:`<button class="btn btn-primary" onclick="go('s-ruqiya-listen')" style="margin-top:12px">🎧 Keyingi seans</button>` });
+    }
+  });
+
+  /* OFFLINE confirm */
+  el("btn-offline-confirm")?.addEventListener("click", () => {
+    if (!state.offline_date) return showErr("offline-error", "Sanani tanlang");
+    if (!state.offline_time) return showErr("offline-error", "Vaqtni tanlang");
+    apiFetch("/api/offline","POST",{ visit_date:state.offline_date, visit_time:state.offline_time, analysis_id:state.analysis_id });
+    showFinal({ icon:"✅", title:"Tashrif tasdiqlandi!",
+      body:`📅 ${state.offline_date}  ⏰ ${state.offline_time}\n📍 Yangi Toshkent, Gulzor MFY\n\nMenejer siz bilan bogʻlanadi.` });
+  });
+
+  /* SAVOL */
+  el("btn-savol-submit")?.addEventListener("click", () => {
+    const txt = el("savol-text")?.value.trim();
+    if (!txt || txt.length < 5) return showErr("savol-error", "Savolingizni kiriting");
+    apiFetch("/api/savol","POST",{ question:txt });
+    el("savol-text").value = "";
+    showFinal({ icon:"📨", title:"Savolingiz yuborildi!", body:"Menejerimiz yaqin orada javob beradi." });
+  });
+
+  /* MA'LUMOTLAR */
+  document.querySelectorAll(".info-card-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const data = MALUMOT_DATA[btn.dataset.info];
+      if (!data) return;
+      const c = el("malumot-content");
+      if (c) c.innerHTML = `<div class="result-title">${data.title}</div>
+        <div class="result-body" style="white-space:pre-line">${data.body}</div>`;
+      const mw = el("map-container"), mf = el("map-iframe");
+      if (mw && mf) {
+        if (data.map) { mf.src=`https://maps.google.com/maps?q=${data.lat},${data.lon}&z=16&output=embed`; mw.style.display="block"; }
+        else mw.style.display = "none";
+      }
+      go("s-malumot-detail");
+    });
+  });
+
+  /* ONLINE RUQIYA — natija ekranidan */
+  el("btn-choose-online")?.addEventListener("click", () => go("s-ruqiya-intro"));
+
+  /* YOPISH */
+  el("btn-close")?.addEventListener("click", () => { if (tg) tg.close(); });
+
+  /* ISHGA TUSHIRISH */
   loadUserOnStart();
   go("s-menu");
   initAudioPlayer();
 });
-
-// Sahifa ochilganda foydalanuvchi va uning ma'lumotlarini yuklash
-async function loadUserOnStart() {
-  // API mavjud emasligida — shunchaki davom etamiz
-  if (!API_BASE) {
-    console.log("API_BASE_URL aniqlanmagan — offline rejim");
-    return;
-  }
-
-  // initData dan tg_id olish
-  const initData = getInitData();
-  if (initData) {
-    try {
-      const match   = initData.match(/user=([^&]+)/);
-      const tgUser  = match ? JSON.parse(decodeURIComponent(match[1])) : {};
-      state.tg_id   = tgUser.id || null;
-    } catch(e) {
-      console.warn("initData parse xatolik:", e);
-    }
-  }
-
-  // tg_id yo'q bo'lsa — to'xtaymiz (xatolik chiqarmaymiz)
-  if (!state.tg_id) {
-    console.log("tg_id topilmadi — Telegram ichida ochish kerak");
-    return;
-  }
-
-  try {
-    // Foydalanuvchi mavjudmi?
-    const userRes = await apiFetch(`/api/user/${state.tg_id}`);
-    if (!userRes?.ok) return; // Yangi foydalanuvchi — ro'yxatdan o'tish kerak
-
-    state.registered = true;
-    console.log("✅ Foydalanuvchi topildi:", userRes.user?.full_name);
-
-    // Parallel yuklash — tezroq
-    const [analysisRes, trackRes] = await Promise.all([
-      apiFetch(`/api/analysis/${state.tg_id}`),
-      apiFetch(`/api/tracking/${state.tg_id}`),
-    ]);
-
-    if (analysisRes?.ok && analysisRes.analysis) {
-      state.analysis_id = analysisRes.analysis.id;
-      state.all_labels  = analysisRes.analysis.symptoms || [];
-      console.log("✅ Tahlil yuklandi:", state.all_labels.length, "ta alomat");
-    }
-
-    if (trackRes?.ok && trackRes.history?.length) {
-      const last = trackRes.history[0];
-      state.remaining_labels = last.remaining_symptoms || [];
-      state.session_num      = trackRes.history.length;
-      syncHistoryFromServer(trackRes.history);
-      console.log("✅ Tarix yuklandi:", state.session_num, "seans");
-    }
-
-  } catch(e) {
-    // API xatolik — foydalanuvchi ishini to'xtatmaymiz
-    console.warn("loadUserOnStart xatolik (kritik emas):", e);
-  }
-}
-
-// Server tarixini localStorage ga sinxronlashtirish
-function syncHistoryFromServer(history) {
-  const sessions = history.map((h, i) => ({
-    session_num: i + 1,
-    date:        h.tracked_at,
-    resolved:    h.resolved_symptoms || [],
-    remaining:   h.remaining_symptoms || [],
-    total:       state.all_labels.length,
-  }));
-  saveSessions(sessions);
-}
