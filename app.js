@@ -20,26 +20,52 @@ const API_BASE = (typeof API_BASE_URL !== "undefined" &&
 
 const AUDIO_SRC = (typeof RUQIYA_AUDIO_URL !== "undefined") ? RUQIYA_AUDIO_URL : "";
 
+// Telegram user ID ni initData dan olish
+function getTgId() {
+  if (state.tg_id) return state.tg_id;
+  try {
+    const initData = getInitData();
+    if (!initData) return null;
+    const match = initData.match(/user=([^&]+)/);
+    if (match) {
+      const user = JSON.parse(decodeURIComponent(match[1]));
+      state.tg_id = user.id || null;
+      return state.tg_id;
+    }
+  } catch(e) {}
+  return null;
+}
+
 async function apiFetch(path, method = "GET", body = null) {
   if (!API_BASE) return null;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 12000);
+  const timer = setTimeout(() => controller.abort(), 15000);
+
+  // tg_id ni har doim body ga qo'shamiz
+  const tgId = getTgId();
+  const enrichedBody = body && tgId ? { ...body, _tg_id: tgId } : body;
+
   try {
     const resp = await fetch(API_BASE + path, {
       method,
       signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
-        "X-Init-Data":  getInitData() || "no_init_data",
+        "X-Init-Data":  getInitData() || "",
+        "X-Tg-Id":      String(tgId || ""),
       },
-      body: body ? JSON.stringify(body) : null,
+      body: enrichedBody ? JSON.stringify(enrichedBody) : null,
     });
     clearTimeout(timer);
-    if (!resp.ok) { console.error("API", resp.status, path); return null; }
+    if (!resp.ok) {
+      const txt = await resp.text().catch(() => "");
+      console.error(`API [${resp.status}] ${path}:`, txt);
+      return null;
+    }
     return await resp.json();
   } catch(e) {
     clearTimeout(timer);
-    console.error("apiFetch", path, e.message);
+    if (e.name !== "AbortError") console.error("apiFetch", path, e.message);
     return null;
   }
 }
@@ -676,8 +702,18 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!phone)  return showErr("reg-error", "Telefon raqamini kiriting");
     state.registered = true;
     state.reg_data   = { full_name:name, age:+age, region, phone };
-    apiFetch("/api/register","POST",state.reg_data).then(r => {
-      if (r?.ok) state.tg_id = r.user?.telegram_id;
+    const tgId = getTgId();
+    apiFetch("/api/register","POST",{
+      ...state.reg_data,
+      tg_id:    tgId,
+      username: tg?.initDataUnsafe?.user?.username || "",
+    }).then(r => {
+      if (r?.ok) {
+        state.tg_id = r.user?.telegram_id || tgId;
+        console.log("✅ Roʻyxatdan oʻtish saqlandi, tg_id:", state.tg_id);
+      } else {
+        console.warn("⚠️ Register API xatolik");
+      }
     });
     go("s-uyqu");
   });
