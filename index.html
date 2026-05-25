@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>TIB VA DAM</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,17 +15,12 @@
 
   <!-- BACK BAR -->
   <div id="back-bar" style="display:none">
-    <button id="btn-back-native" class="btn-back">
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      Orqaga
-    </button>
+    <button id="btn-back-native" class="btn-back">← Orqaga</button>
   </div>
 
   <!-- HEADER -->
   <div class="app-header">
-    <div class="app-logo">TIB <span>VA DAM</span></div>
+    <div class="app-logo">TIB<span>VADAM</span></div>
     <div class="app-tagline">Ruhiy holatni aniqlash platformasi</div>
   </div>
   <div style="padding:0 16px 4px">
@@ -60,7 +58,7 @@
   <!-- ══ SCREEN: REGISTER ══ -->
   <div id="s-register" class="screen">
     <div class="section-header">
-      <span class="section-emoji">👤</span>
+      <span class="section-emoji"></span>
       <h2 class="section-title">Roʻyxatdan oʻtish</h2>
       <p class="section-sub">Bu maʼlumotlar faqat bir marta soʻraladi</p>
     </div>
@@ -91,7 +89,7 @@
   <!-- ══ SCREEN: UYQUDAGI ALOMATLAR ══ -->
   <div id="s-uyqu" class="screen">
     <div class="section-header">
-      <span class="section-emoji">😴</span>
+      <span class="section-emoji"></span>
       <h2 class="section-title">Uyqudagi alomatlar</h2>
       <p class="section-sub">1-boʻlim: Tushlar va uyqudagi holatlarga tegishli alomatlarni belgilang</p>
     </div>
@@ -106,7 +104,7 @@
   <!-- ══ SCREEN: O'NGIDAGI ALOMATLAR ══ -->
   <div id="s-ongi" class="screen">
     <div class="section-header">
-      <span class="section-emoji">🌞</span>
+      <span class="section-emoji"></span>
       <h2 class="section-title">Oʻngidagi alomatlar</h2>
       <p class="section-sub">2-boʻlim: Kundalik hayotda, uyg'oq vaqtda sezayotgan alomatlar</p>
     </div>
@@ -121,7 +119,7 @@
   <!-- ══ SCREEN: XONADONDAGI ALOMATLAR ══ -->
   <div id="s-xonadon" class="screen">
     <div class="section-header">
-      <span class="section-emoji">🏠</span>
+      <span class="section-emoji"></span>
       <h2 class="section-title">Xonadondagi alomatlar</h2>
       <p class="section-sub">3-boʻlim: Uyingizda yoki ishxonangizda kuzatayotgan alomatlar</p>
     </div>
@@ -136,7 +134,7 @@
   <!-- ══ SCREEN: SHIKOYAT ══ -->
   <div id="s-complaint" class="screen">
     <div class="section-header">
-      <span class="section-emoji">✍️</span>
+      <span class="section-emoji"></span>
       <h2 class="section-title">Holatingizni tasvirlang</h2>
       <p class="section-sub">Oʻz soʻzlaringiz bilan yozing</p>
     </div>
@@ -168,7 +166,7 @@
   <!-- ══ SCREEN: TAHLIL NATIJASI ══ -->
   <div id="s-result" class="screen">
     <div class="section-header">
-      <span class="section-emoji">📋</span>
+      <span class="section-emoji"></span>
       <h2 class="section-title">Tahlil natijasi</h2>
       <p class="section-sub" id="result-symptoms-count"></p>
     </div>
@@ -196,7 +194,7 @@
 
     <!-- Asosiy CTA -->
     <button class="btn btn-primary" data-goto="s-offline" style="margin-bottom:6px">
-      📅 TIB VA DAM ga tashrif yozish
+      TIB VA DAM ga tashrif yozish
     </button>
 
     <!-- Ikkinchi variant -->
@@ -216,7 +214,7 @@
   <!-- ══ SCREEN: RUQIYA INTRO ══ -->
   <div id="s-ruqiya-intro" class="screen">
     <div class="section-header">
-      <span class="section-emoji">🧕</span>
+      <span class="section-emoji"></span>
       <h2 class="section-title">Onlayn Ruqiya</h2>
     </div>
     <div class="card">
@@ -233,15 +231,15 @@
       </ol>
     </div>
     <div class="info-box">✅ Terlash, titroq, sanchiqlar — shifo jarayoni boshlanganining belgisi</div>
-    <button class="btn btn-primary" id="btn-ruqiya-listen">🎧 Ruqiyani tinglash</button>
-    <button class="btn btn-secondary" data-goto="s-reaction-words">📊 Reaktsiya belgilash</button>
-    <button class="btn btn-secondary" id="btn-ruqiya-11kun">✅ 11 kun tugadi — tekshirish</button>
+    <button class="btn btn-primary" id="btn-ruqiya-listen">Ruqiyani tinglash</button>
+    <button class="btn btn-secondary" data-goto="s-reaction-words">Reaktsiya belgilash</button>
+    <button class="btn btn-secondary" id="btn-ruqiya-11kun">11 kun tugadi — tekshirish</button>
   </div>
 
   <!-- ══ SCREEN: RUQIYA TINGLASH ══ -->
   <div id="s-ruqiya-listen" class="screen">
     <div class="section-header">
-      <span class="section-emoji">🎧</span>
+      <span class="section-emoji"></span>
       <h2 class="section-title">Ruqiyani tinglash</h2>
     </div>
     <div class="info-box">
@@ -287,7 +285,7 @@
   <!-- ══ SCREEN: 11 KUN TEKSHIRISH ══ -->
   <div id="s-ruqiya-check" class="screen">
     <div class="section-header">
-      <span class="section-emoji">📊</span>
+      <span class="section-emoji"></span>
       <h2 class="section-title">11 kundan soʻng taʼsir</h2>
       <p class="section-sub">Ruqiyani tinglagandan soʻng oʻzingizda qanday oʻzgarish sezdingiz?</p>
     </div>
@@ -313,7 +311,7 @@
   <!-- ══ SCREEN: REAKTSIYA KALIMLARI ══ -->
   <div id="s-reaction-words" class="screen">
     <div class="section-header">
-      <span class="section-emoji">🔴</span>
+      <span class="section-emoji"></span>
       <h2 class="section-title">Reaktsiya kalimlari</h2>
       <p class="section-sub">Ruqiyani tinglarkaniz, qaysi kalimlarda reaktsiya sezdingiz?</p>
     </div>
@@ -328,7 +326,7 @@
   <!-- ══ SCREEN: RUQIYA PAYTIDAGI ALOMATLAR ══ -->
   <div id="s-during-symptoms" class="screen">
     <div class="section-header">
-      <span class="section-emoji">🟡</span>
+      <span class="section-emoji"></span>
       <h2 class="section-title">Ruqiya paytidagi alomatlar</h2>
       <p class="section-sub">Tinglash paytida qanday alomatlar sezdingiz?</p>
     </div>
@@ -343,21 +341,21 @@
   <!-- ══ SCREEN: ALOMATLAR KUZATUVI ══ -->
   <div id="s-tracking" class="screen">
     <div class="section-header">
-      <span class="section-emoji">📊</span>
+      <span class="section-emoji"></span>
       <h2 class="section-title">Alomatlar kuzatuvi</h2>
       <p class="section-sub">Yoʻqolgan yoki kamaygan alomatlarni belgilang ✅</p>
     </div>
     <div class="card" id="track-stats"></div>
     <div class="symptom-list" id="track-list"></div>
     <div class="bottom-nav">
-      <button class="btn btn-primary" id="btn-track-save">💾 Natijani saqlash</button>
+      <button class="btn btn-primary" id="btn-track-save">Natijani saqlash</button>
     </div>
   </div>
 
   <!-- ══ SCREEN: OFFLAYN TASHRIF ══ -->
   <div id="s-offline" class="screen">
     <div class="section-header">
-      <span class="section-emoji">📅</span>
+      <span class="section-emoji"></span>
       <h2 class="section-title">Shaxsan tashrif</h2>
       <p class="section-sub">Qulay sana va vaqtni tanlang</p>
     </div>
@@ -379,25 +377,25 @@
     <p id="offline-confirm-text" style="text-align:center;font-size:.85rem;color:var(--tg-hint);margin:4px 0 8px"></p>
     <p id="offline-error" class="field-error" style="text-align:center"></p>
     <div class="bottom-nav">
-      <button class="btn btn-primary" id="btn-offline-confirm">✅ Tasdiqlash</button>
+      <button class="btn btn-primary" id="btn-offline-confirm">Tasdiqlash</button>
     </div>
   </div>
 
   <!-- ══ SCREEN: MA'LUMOTLAR ══ -->
   <div id="s-malumot" class="screen">
     <div class="section-header">
-      <span class="section-emoji">📖</span>
+      <span class="section-emoji"></span>
       <h2 class="section-title">Maʼlumotlar</h2>
     </div>
     <div class="info-cards">
       <div class="info-card-btn" data-info="domla">
-        <span class="ic-icon">👳</span><span class="ic-label">Domla haqida</span><span class="ic-arrow">›</span>
+        <span class="ic-label">Domla haqida</span><span class="ic-arrow">›</span>
       </div>
       <div class="info-card-btn" data-info="markaz">
-        <span class="ic-icon">🏥</span><span class="ic-label">Markaz haqida</span><span class="ic-arrow">›</span>
+        <span class="ic-label">Markaz haqida</span><span class="ic-arrow">›</span>
       </div>
       <div class="info-card-btn" data-info="manzil">
-        <span class="ic-icon">📍</span><span class="ic-label">Manzil va xarita</span><span class="ic-arrow">›</span>
+        <span class="ic-label">Manzil va xarita</span><span class="ic-arrow">›</span>
       </div>
     </div>
   </div>
@@ -409,14 +407,14 @@
       <iframe id="map-iframe" width="100%" height="250" style="border:0;border-radius:var(--radius)" allowfullscreen loading="lazy"></iframe>
     </div>
     <div class="bottom-nav">
-      <button class="btn btn-secondary" data-goto="s-malumot">🔙 Orqaga</button>
+      <button class="btn btn-secondary" data-goto="s-malumot">Orqaga</button>
     </div>
   </div>
 
   <!-- ══ SCREEN: SAVOL-JAVOB ══ -->
   <div id="s-savol" class="screen">
     <div class="section-header">
-      <span class="section-emoji">❓</span>
+      <span class="section-emoji"></span>
       <h2 class="section-title">Savol-javob</h2>
       <p class="section-sub">Savolingizni yozing — menejerimiz tez orada javob beradi</p>
     </div>
@@ -428,7 +426,7 @@
       </div>
     </div>
     <div class="bottom-nav">
-      <button class="btn btn-primary" id="btn-savol-submit">📨 Yuborish</button>
+      <button class="btn btn-primary" id="btn-savol-submit">Yuborish</button>
     </div>
   </div>
 
@@ -442,14 +440,14 @@
     <div id="final-extra" style="margin-top:10px"></div>
     <div class="bottom-nav">
       <button class="btn btn-primary" data-goto="s-menu">🏠 Bosh menyuga</button>
-      <button class="btn btn-ghost" id="btn-close">Ilovani yopish</button>
+      <button class="btn btn-ghost" id="btn-close">Yopish</button>
     </div>
   </div>
 
   <!-- ══ SCREEN: SEANS TUGADI — ALOMATLARNI BELGILASH ══ -->
   <div id="s-after-listen" class="screen">
     <div class="section-header">
-      <span class="section-emoji">✨</span>
+      <span class="section-emoji"></span>
       <h2 class="section-title">Seans tugadi</h2>
       <p class="section-sub" id="after-listen-sub">1-seans • Qaysi alomatlar yaxshilandi yoki yoʻqoldi?</p>
     </div>
@@ -468,33 +466,29 @@
 
     <div class="bottom-nav">
       <div class="nav-hint">Oʻzgarish boʻlmasa ham davom etish mumkin</div>
-      <button class="btn btn-primary" id="btn-after-save">💾 Saqlash va davom etish</button>
+      <button class="btn btn-primary" id="btn-after-save">Saqlash</button>
     </div>
   </div>
 
   <!-- ══ SCREEN: TARIX — BARCHA SEANSLAR ══ -->
   <div id="s-history" class="screen">
     <div class="section-header">
-      <span class="section-emoji">📈</span>
+      <span class="section-emoji"></span>
       <h2 class="section-title">Seanslar tarixi</h2>
       <p class="section-sub">Har bir seans natijasi</p>
     </div>
     <div id="history-list"></div>
     <div class="bottom-nav">
-      <button class="btn btn-primary" data-goto="s-ruqiya-listen">🎧 Yangi seans</button>
+      <button class="btn btn-primary" data-goto="s-ruqiya-listen">Yangi seans</button>
     </div>
   </div>
 
 
 </div>
 <script>
-  // ── AUDIO ──────────────────────────────────────────────────────────────────
+  // Audio fayl URL
   const RUQIYA_AUDIO_URL = "https://drive.google.com/uc?export=download&id=1ejYibKBvkurohRF5GZ99NL6j-cpPJLVj";
-
-  // ── BACKEND API ─────────────────────────────────────────────────────────────
-  // Railway URL ni shu yerga qo'ying (GROQ kaliti faqat serverda qoladi)
-  // Misol: "https://ruhiyat-production.up.railway.app"
-  const API_BASE_URL = "SHU_YERGA_RAILWAY_URL_QOYING";
+  // API_BASE_URL kerak emas — barcha ma'lumotlar Telegram bot orqali yoziladi
 </script>
 <script src="app.js"></script>
 </body>
