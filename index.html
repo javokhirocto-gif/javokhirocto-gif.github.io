@@ -4,63 +4,55 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>TIB VA DAM</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="app">
 
-  <!-- BACK BAR -->
-  <div id="back-bar" style="display:none">
-    <button id="btn-back-native" class="btn-back">← Orqaga</button>
-  </div>
-
-  <!-- HEADER -->
   <div class="app-header">
     <div class="app-logo">TIB<span>VADAM</span></div>
     <div class="app-tagline">Ruhiy holatni aniqlash platformasi</div>
   </div>
-  <div style="padding:0 16px 4px">
-    <div class="progress-wrap">
-      <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
-      <span class="progress-label"></span>
-    </div>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+    <span class="progress-label"></span>
   </div>
 
-  <!-- ══ SCREEN: MENU ══ -->
+  <!-- BACK BAR -->
+  <div id="back-bar" style="display:none">
+    <button id="btn-back" class="btn-back">← Orqaga</button>
+  </div>
+
+  <!-- MENU -->
   <div id="s-menu" class="screen">
     <div class="menu-grid">
-      <div class="menu-card" data-goto="s-uyqu" data-action="analysis">
-        <span class="mc-icon">🧠</span><span class="mc-label">Holatimni aniqlash</span>
+      <div class="menu-card" data-goto="s-uyqu" data-need-reg="1">
+        <div class="mc-label">Holatimni aniqlash</div>
       </div>
-      <div class="menu-card" data-goto="s-ruqiya-intro">
-        <span class="mc-icon">🧕</span><span class="mc-label">Onlayn ruqiya</span>
+      <div class="menu-card" data-goto="s-ruqiya">
+        <div class="mc-label">Onlayn ruqiya</div>
       </div>
-      <div class="menu-card" data-goto="s-malumot">
-        <span class="mc-icon">📖</span><span class="mc-label">Maʼlumotlar</span>
+      <div class="menu-card" data-goto="s-offline" data-need-reg="1">
+        <div class="mc-label">Tashrif yozish</div>
       </div>
-      <div class="menu-card" data-goto="s-tracking">
-        <span class="mc-icon">📊</span><span class="mc-label">Alomatlar kuzatuvi</span>
-      </div>
-      <div class="menu-card" data-goto="s-savol">
-        <span class="mc-icon">❓</span><span class="mc-label">Savol-javob</span>
+      <div class="menu-card" data-goto="s-info">
+        <div class="mc-label">Ma'lumotlar</div>
       </div>
     </div>
     <div class="card">
-      <div class="card-title"><span class="icon">🏥</span> "TIB VA DAM" markazi</div>
-      <p class="muted-text">📍 Yangi Toshkent, Gulzor MFY<br>Moʻljal: Yangi Qoʻyliq bozori, Food City koʻchasi<br>🕐 Jumaday tashqari har kuni: 07:00 va 20:00</p>
+      <div class="card-title">TIB VA DAM markazi</div>
+      <p class="muted-text">📍 Yangi Toshkent, Gulzor MFY<br>Har kuni (jumaday tashqari): 07:00 va 20:00</p>
     </div>
   </div>
 
-  <!-- ══ SCREEN: REGISTER ══ -->
+  <!-- REGISTER -->
   <div id="s-register" class="screen">
     <div class="section-header">
-      <span class="section-emoji"></span>
-      <h2 class="section-title">Roʻyxatdan oʻtish</h2>
-      <p class="section-sub">Bu maʼlumotlar faqat bir marta soʻraladi</p>
+      <h2 class="section-title">Ro'yxatdan o'tish</h2>
+      <p class="section-sub">Bu ma'lumotlar faqat bir marta so'raladi</p>
     </div>
     <div class="card">
       <div class="form-group">
@@ -82,310 +74,249 @@
       <p id="reg-error" class="field-error"></p>
     </div>
     <div class="bottom-nav">
-      <button class="btn btn-primary" id="btn-reg-submit">Davom etish →</button>
+      <button class="btn btn-primary" id="btn-reg">Davom etish →</button>
     </div>
   </div>
 
-  <!-- ══ SCREEN: UYQUDAGI ALOMATLAR ══ -->
+  <!-- UYQUDAGI ALOMATLAR -->
   <div id="s-uyqu" class="screen">
     <div class="section-header">
-      <span class="section-emoji"></span>
       <h2 class="section-title">Uyqudagi alomatlar</h2>
-      <p class="section-sub">1-boʻlim: Tushlar va uyqudagi holatlarga tegishli alomatlarni belgilang</p>
+      <p class="section-sub">1-bo'lim: Tushlar va uyqudagi holatlarga tegishli alomatlar</p>
     </div>
     <div class="sel-count" id="uyqu-count">Hech narsa belgilanmadi</div>
     <div class="symptom-list" id="uyqu-list"></div>
     <div class="bottom-nav">
-      <div class="nav-hint">Birortasi boʻlmasa ham davom etish mumkin</div>
-      <button class="btn btn-primary" data-goto="s-ongi">Keyingisi →</button>
+      <div class="nav-hint">Birortasi bo'lmasa ham davom etish mumkin</div>
+      <button class="btn btn-primary" id="btn-uyqu-next">Keyingisi →</button>
     </div>
   </div>
 
-  <!-- ══ SCREEN: O'NGIDAGI ALOMATLAR ══ -->
+  <!-- O'NGIDAGI ALOMATLAR -->
   <div id="s-ongi" class="screen">
     <div class="section-header">
-      <span class="section-emoji"></span>
-      <h2 class="section-title">Oʻngidagi alomatlar</h2>
-      <p class="section-sub">2-boʻlim: Kundalik hayotda, uyg'oq vaqtda sezayotgan alomatlar</p>
+      <h2 class="section-title">O'ngidagi alomatlar</h2>
+      <p class="section-sub">2-bo'lim: Kundalik hayotda, uyg'oq vaqtda sezayotgan alomatlar</p>
     </div>
     <div class="sel-count" id="ongi-count">Hech narsa belgilanmadi</div>
     <div class="symptom-list" id="ongi-list"></div>
     <div class="bottom-nav">
-      <div class="nav-hint">Birortasi boʻlmasa ham davom etish mumkin</div>
-      <button class="btn btn-primary" data-goto="s-xonadon">Keyingisi →</button>
+      <div class="nav-hint">Birortasi bo'lmasa ham davom etish mumkin</div>
+      <button class="btn btn-primary" id="btn-ongi-next">Keyingisi →</button>
     </div>
   </div>
 
-  <!-- ══ SCREEN: XONADONDAGI ALOMATLAR ══ -->
-  <div id="s-xonadon" class="screen">
+  <!-- XONADONDAGI ALOMATLAR -->
+  <div id="s-xon" class="screen">
     <div class="section-header">
-      <span class="section-emoji"></span>
       <h2 class="section-title">Xonadondagi alomatlar</h2>
-      <p class="section-sub">3-boʻlim: Uyingizda yoki ishxonangizda kuzatayotgan alomatlar</p>
+      <p class="section-sub">3-bo'lim: Uyingizda yoki ishxonangizda kuzatayotgan alomatlar</p>
     </div>
-    <div class="sel-count" id="xonadon-count">Hech narsa belgilanmadi</div>
-    <div class="symptom-list" id="xonadon-list"></div>
+    <div class="sel-count" id="xon-count">Hech narsa belgilanmadi</div>
+    <div class="symptom-list" id="xon-list"></div>
     <div class="bottom-nav">
-      <div class="nav-hint">Birortasi boʻlmasa ham davom etish mumkin</div>
-      <button class="btn btn-primary" data-goto="s-complaint">Davom etish →</button>
+      <div class="nav-hint">Birortasi bo'lmasa ham davom etish mumkin</div>
+      <button class="btn btn-primary" id="btn-xon-next">Davom etish →</button>
     </div>
   </div>
 
-  <!-- ══ SCREEN: SHIKOYAT ══ -->
+  <!-- SHIKOYAT -->
   <div id="s-complaint" class="screen">
     <div class="section-header">
-      <span class="section-emoji"></span>
       <h2 class="section-title">Holatingizni tasvirlang</h2>
-      <p class="section-sub">Oʻz soʻzlaringiz bilan yozing</p>
+      <p class="section-sub">O'z so'zlaringiz bilan yozing</p>
     </div>
     <div class="card">
-      <div class="card-title"><span class="icon">📋</span> Belgilangan alomatlar</div>
+      <div class="card-title">Belgilangan alomatlar</div>
       <div class="sym-summary" id="complaint-summary"></div>
     </div>
     <div class="card">
       <div class="form-group">
         <label class="form-label">Batafsil tasvirlang</label>
-        <textarea id="complaint-text" class="form-textarea" placeholder="masalan: Uch oydan beri uxlay olmayapman, tushimda yomon narsalar koʻraman..."></textarea>
+        <textarea id="complaint-text" class="form-textarea"
+          placeholder="masalan: Uch oydan beri uxlay olmayapman, tushimda yomon narsalar ko'raman..."></textarea>
         <p id="complaint-error" class="field-error"></p>
       </div>
     </div>
     <div class="bottom-nav">
-      <button class="btn btn-primary" id="btn-complaint-submit">Tahlil qilish 🔍</button>
+      <button class="btn btn-primary" id="btn-complaint">Tahlil qilish →</button>
     </div>
   </div>
 
-  <!-- ══ SCREEN: LOADING ══ -->
+  <!-- LOADING -->
   <div id="s-loading" class="screen">
     <div class="loading-screen">
       <div class="spinner"></div>
-      <div class="loading-text" id="loading-text">Tahlil qilinmoqda...</div>
-      <div class="muted-text" style="text-align:center;margin-top:8px" id="loading-sub">Biroz sabr qiling</div>
+      <div class="loading-text" id="loading-text">Tahlil qilinmoqda</div>
+      <p class="muted-text" style="text-align:center" id="loading-sub">Bot javob tayyorlamoqda</p>
     </div>
   </div>
 
-  <!-- ══ SCREEN: TAHLIL NATIJASI ══ -->
+  <!-- NATIJA -->
   <div id="s-result" class="screen">
     <div class="section-header">
-      <span class="section-emoji"></span>
       <h2 class="section-title">Tahlil natijasi</h2>
-      <p class="section-sub" id="result-symptoms-count"></p>
+      <p class="section-sub" id="result-count"></p>
     </div>
-
-    <!-- Belgilangan alomatlar -->
     <div class="card">
       <div class="card-title">Belgilangan alomatlar</div>
       <div class="sym-summary" id="result-symptoms"></div>
     </div>
-
-    <!-- Asosiy xulosa -->
     <div class="result-card">
       <div class="result-title">Holat tavsifi</div>
-      <div class="result-body" id="result-body">Katta ehtimol bilan bu alomatlarning sababi sehr yoki jinn ta'siri bo'lishi mumkin.</div>
+      <div class="result-body" id="result-body">
+        Natija Telegram chatda yuborildi.
+      </div>
+    </div>
+    <div class="warn-box">Barcha javoblar taxminiy. Yakuniy qaror mutaxassis ko'rigidan so'ng aniqlanadi.</div>
+
+    <!-- Birinchi tavsiya: Offline -->
+    <div class="rec-card rec-card-primary" id="btn-goto-offline">
+      <div class="rec-label">Birinchi tavsiya</div>
+      <div class="rec-title">TIB VA DAM ga tashrif yozish</div>
+      <div class="rec-desc">Tabib ko'rigidan o'tib, holatning asl sababini aniqlash va tuzatish</div>
+      <div class="rec-arrow">Tashrif yozish →</div>
     </div>
 
-    <!-- Tavsiya -->
-    <div class="result-card" style="border-color:rgba(200,169,110,.25)">
-      <div class="result-title" style="font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;font-family:var(--f-body);color:var(--gold-dim);margin-bottom:10px">Tavsiyamiz</div>
-      <p style="font-size:.88rem;line-height:1.7;color:var(--white)">Holatingizning asl sababini aniq aniqlash va tuzatish uchun <strong style="color:var(--gold-pale)">TIB VA DAM markaziga shaxsan tashrif buyurishingiz</strong> tavsiya etiladi.</p>
-      <p style="font-size:.82rem;line-height:1.6;color:var(--muted);margin-top:8px">Tabib ko'rigidan o'tgan holda ruqiya seansi o'tkaziladi va holatga mos davolanish yo'naltiriladi.</p>
-    </div>
-
-    <div class="warn-box">⚠️ Barcha javoblar taxminiy. Yakuniy qaror mutaxassis ko'rigidan so'ng aniqlanadi.</div>
-
-    <!-- Asosiy CTA -->
-    <button class="btn btn-primary" data-goto="s-offline" style="margin-bottom:6px">
-      TIB VA DAM ga tashrif yozish
-    </button>
-
-    <!-- Ikkinchi variant -->
     <div class="divider">yoki</div>
 
-    <div class="rec-card rec-card-secondary" id="btn-choose-online">
-      <div class="rec-num">02</div>
-      <div class="rec-label">Offline tashrif imkoni bo'lmasa</div>
-      <div class="rec-title">Online ruqiya orqali</div>
-      <div class="rec-desc">O'z-o'zini davolash hamda alomatlarning yo'qolishini kuzatib borish imkoniyati</div>
+    <!-- Ikkinchi variant: Online -->
+    <div class="rec-card rec-card-secondary" id="btn-goto-ruqiya">
+      <div class="rec-label">Tashrif imkoni bo'lmasa</div>
+      <div class="rec-title">Onlayn ruqiya orqali</div>
+      <div class="rec-desc">O'z-o'zini davolash va alomatlarning yo'qolishini kuzatib borish</div>
       <div class="rec-arrow">Boshlash →</div>
     </div>
   </div>
 
-
-
-  <!-- ══ SCREEN: RUQIYA INTRO ══ -->
-  <div id="s-ruqiya-intro" class="screen">
+  <!-- ONLAYN RUQIYA -->
+  <div id="s-ruqiya" class="screen">
     <div class="section-header">
-      <span class="section-emoji"></span>
-      <h2 class="section-title">Onlayn Ruqiya</h2>
+      <h2 class="section-title">Onlayn ruqiya</h2>
+      <p class="section-sub">11 kun davomida, tong va kechqurun tinglang</p>
     </div>
     <div class="card">
-      <div class="card-title"><span class="icon">ℹ️</span> Ruqiya nima?</div>
-      <p class="muted-text">Ruqiya — ogʻriq, sehr, koʻz tegishi kabi ofatga yoʻliqqan odamga oʻqib dam solinadigan duolar. Faqat Allohning kalomi bilan, Allohning taqdiri bilan taʼsir qiladi.</p>
+      <div class="card-title">Tinglash tartibi</div>
+      <p class="muted-text">1. Tahorat oling, 2 rakat hojat namozini o'qing<br>
+      2. Tinch xonada, ko'zni yumgan holda tinglang<br>
+      3. Naushnik yoki kolonka orqali eshiting</p>
     </div>
-    <div class="card">
-      <div class="card-title"><span class="icon">📋</span> Eshitish tartibi</div>
-      <ol class="muted-text" style="padding-left:18px;line-height:2.2">
-        <li>Tahorat oling, 2 rakat hojat namozini oʻqing</li>
-        <li>Tinch xonada, koʻzni yumgan holda tinglang</li>
-        <li>Naushnik yoki kolonka orqali eshitish mumkin</li>
-        <li>11 kun davomida, tong va kechqurun tinglang</li>
-      </ol>
-    </div>
-    <div class="info-box">✅ Terlash, titroq, sanchiqlar — shifo jarayoni boshlanganining belgisi</div>
-    <button class="btn btn-primary" id="btn-ruqiya-listen">Ruqiyani tinglash</button>
-    <button class="btn btn-secondary" data-goto="s-reaction-words">Reaktsiya belgilash</button>
-    <button class="btn btn-secondary" id="btn-ruqiya-11kun">11 kun tugadi — tekshirish</button>
-  </div>
+    <div class="notice-box">Terlash, titroq, bosh og'rishi — shifo jarayoni boshlanganidan darak.</div>
 
-  <!-- ══ SCREEN: RUQIYA TINGLASH ══ -->
-  <div id="s-ruqiya-listen" class="screen">
-    <div class="section-header">
-      <span class="section-emoji"></span>
-      <h2 class="section-title">Ruqiyani tinglash</h2>
-    </div>
-    <div class="info-box">
-      11 kun davomida tong va kechqurun tinglang.<br>
-      Quloqchin taqib, koʻzni yumib, xotirjam holda eshiting.
-    </div>
+    <!-- Audio player -->
     <div class="audio-player-wrap" id="audio-wrap">
       <div class="audio-player">
         <button class="audio-play-btn" id="audio-play-btn">
-          <svg id="audio-play-icon" width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <circle cx="14" cy="14" r="13" stroke="var(--gold)" stroke-width="1.5"/>
-            <path d="M11 9.5L20 14L11 18.5V9.5Z" fill="var(--gold)"/>
+          <svg id="icon-play" width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <circle cx="18" cy="18" r="17" stroke="#1a1916" stroke-width="1.5"/>
+            <path d="M14 12.5L24 18L14 23.5V12.5Z" fill="#1a1916"/>
           </svg>
-          <svg id="audio-pause-icon" width="28" height="28" viewBox="0 0 28 28" fill="none" style="display:none">
-            <circle cx="14" cy="14" r="13" stroke="var(--gold)" stroke-width="1.5"/>
-            <rect x="9" y="9" width="3.5" height="10" rx="1" fill="var(--gold)"/>
-            <rect x="15.5" y="9" width="3.5" height="10" rx="1" fill="var(--gold)"/>
+          <svg id="icon-pause" width="36" height="36" viewBox="0 0 36 36" fill="none" style="display:none">
+            <circle cx="18" cy="18" r="17" stroke="#1a1916" stroke-width="1.5"/>
+            <rect x="12" y="12" width="4" height="12" rx="1.5" fill="#1a1916"/>
+            <rect x="20" y="12" width="4" height="12" rx="1.5" fill="#1a1916"/>
           </svg>
         </button>
         <div class="audio-info">
           <div class="audio-title">Ruqiya audiosi</div>
           <div class="audio-progress-wrap">
-            <div class="audio-progress-bar"><div class="audio-progress-fill" id="audio-progress"></div></div>
-            <span class="audio-time" id="audio-time">0:00 / 0:00</span>
+            <div class="audio-progress-bar"><div class="audio-progress-fill" id="audio-prog"></div></div>
+            <span class="audio-time" id="audio-time">0:00</span>
           </div>
         </div>
       </div>
       <audio id="ruqiya-audio" preload="none"></audio>
       <p class="muted-text" id="audio-no-file" style="text-align:center;margin-top:8px;display:none">
-        Audio fayl hozircha yuklanmagan. Menejerdan soʻrang: @manager_username
+        Audio fayl yuklanmagan. Menejerdan so'rang.
       </p>
     </div>
-    <div class="card">
-      <div class="card-title"><span class="icon">⚠️</span> Tinglash paytida kuzatilishi mumkin</div>
-      <p class="muted-text">terlash • koʻngil ayinishi • bosh ogʻrishi • titroq • sanchiqlar<br><br>
-      <span style="color:var(--emerald-light)">✅ Bunday holatlar — shifo jarayoni boshlanganidan darak.</span></p>
-    </div>
-    <button class="btn btn-primary" data-goto="s-reaction-words">📊 Tingladim — reaktsiya belgilash</button>
-    <button class="btn btn-secondary" id="btn-ruqiya-check">✅ 11 kun tugadi</button>
-    <button class="btn btn-ghost" data-goto="s-history">📈 Seanslar tarixi</button>
+
+    <button class="btn btn-primary" id="btn-after-listen" style="display:none">
+      Seansdan so'ng alomatlarni belgilash
+    </button>
+    <button class="btn btn-secondary" data-goto="s-history">Seanslar tarixi</button>
   </div>
 
-  <!-- ══ SCREEN: 11 KUN TEKSHIRISH ══ -->
-  <div id="s-ruqiya-check" class="screen">
+  <!-- 11 KUN TEKSHIRISH -->
+  <div id="s-check" class="screen">
     <div class="section-header">
-      <span class="section-emoji"></span>
-      <h2 class="section-title">11 kundan soʻng taʼsir</h2>
-      <p class="section-sub">Ruqiyani tinglagandan soʻng oʻzingizda qanday oʻzgarish sezdingiz?</p>
+      <h2 class="section-title">11 kundan so'ng ta'sir</h2>
+      <p class="section-sub">Qanday o'zgarish sezdingiz?</p>
     </div>
     <div class="effect-btns">
       <div class="effect-btn" data-effect="yes">
-        <span class="effect-icon">✅</span>
-        <div class="effect-label">Ha, taʼsir bor</div>
-        <div class="effect-sub">Allohga shukr, yaxshilanmoqda</div>
+        <div><div class="effect-label">Ha, ta'sir bor</div><div class="effect-sub">Allohga shukr, yaxshilanmoqda</div></div>
       </div>
       <div class="effect-btn" data-effect="continue">
-        <span class="effect-icon">⏳</span>
-        <div class="effect-label">Davom etmoqda</div>
-        <div class="effect-sub">Ozgina oʻzgarish bor</div>
+        <div><div class="effect-label">Davom etmoqda</div><div class="effect-sub">Ozgina o'zgarish bor</div></div>
       </div>
       <div class="effect-btn" data-effect="no">
-        <span class="effect-icon">❌</span>
-        <div class="effect-label">Yoʻq, oʻzgarish sezmadim</div>
-        <div class="effect-sub">Shaxsan tashrif tavsiya etiladi</div>
+        <div><div class="effect-label">O'zgarish sezmadim</div><div class="effect-sub">Shaxsan tashrif tavsiya etiladi</div></div>
       </div>
     </div>
   </div>
 
-  <!-- ══ SCREEN: REAKTSIYA KALIMLARI ══ -->
-  <div id="s-reaction-words" class="screen">
-    <div class="section-header">
-      <span class="section-emoji"></span>
-      <h2 class="section-title">Reaktsiya kalimlari</h2>
-      <p class="section-sub">Ruqiyani tinglarkaniz, qaysi kalimlarda reaktsiya sezdingiz?</p>
-    </div>
-    <div class="sel-count" id="rw-count">Hech narsa belgilanmadi</div>
-    <div class="word-grid" id="rw-grid"></div>
-    <div class="bottom-nav">
-      <div class="nav-hint">Birortasi boʻlmasa ham davom etish mumkin</div>
-      <button class="btn btn-primary" data-goto="s-during-symptoms">Keyingisi →</button>
-    </div>
-  </div>
-
-  <!-- ══ SCREEN: RUQIYA PAYTIDAGI ALOMATLAR ══ -->
-  <div id="s-during-symptoms" class="screen">
-    <div class="section-header">
-      <span class="section-emoji"></span>
-      <h2 class="section-title">Ruqiya paytidagi alomatlar</h2>
-      <p class="section-sub">Tinglash paytida qanday alomatlar sezdingiz?</p>
-    </div>
-    <div class="sel-count" id="ds-count">Hech narsa belgilanmadi</div>
-    <div class="chip-grid" id="ds-grid"></div>
-    <div class="bottom-nav">
-      <div class="nav-hint">Birortasi boʻlmasa ham saqlash mumkin</div>
-      <button class="btn btn-primary" id="btn-ds-save">💾 Saqlash</button>
-    </div>
-  </div>
-
-  <!-- ══ SCREEN: ALOMATLAR KUZATUVI ══ -->
+  <!-- KUZATUV — seans tugagandan keyin -->
   <div id="s-tracking" class="screen">
     <div class="section-header">
-      <span class="section-emoji"></span>
-      <h2 class="section-title">Alomatlar kuzatuvi</h2>
-      <p class="section-sub">Yoʻqolgan yoki kamaygan alomatlarni belgilang ✅</p>
+      <h2 class="section-title">Alomatlarni belgilash</h2>
+      <p class="section-sub" id="tracking-sub">Qaysi alomatlar yo'qoldi yoki kamaydi?</p>
     </div>
     <div class="card" id="track-stats"></div>
     <div class="symptom-list" id="track-list"></div>
     <div class="bottom-nav">
-      <button class="btn btn-primary" id="btn-track-save">Natijani saqlash</button>
+      <div class="nav-hint">Yaxshilangan alomatlarni belgilang</div>
+      <button class="btn btn-primary" id="btn-track-save">Saqlash</button>
     </div>
   </div>
 
-  <!-- ══ SCREEN: OFFLAYN TASHRIF ══ -->
+  <!-- SEANSLAR TARIXI -->
+  <div id="s-history" class="screen">
+    <div class="section-header">
+      <h2 class="section-title">Seanslar tarixi</h2>
+    </div>
+    <div id="history-list"></div>
+    <div class="bottom-nav">
+      <button class="btn btn-primary" data-goto="s-ruqiya">Yangi seans</button>
+    </div>
+  </div>
+
+  <!-- OFFLINE TASHRIF -->
   <div id="s-offline" class="screen">
     <div class="section-header">
-      <span class="section-emoji"></span>
-      <h2 class="section-title">Shaxsan tashrif</h2>
+      <h2 class="section-title">Tashrif yozish</h2>
       <p class="section-sub">Qulay sana va vaqtni tanlang</p>
     </div>
     <div class="card">
-      <div class="card-title"><span class="icon">📍</span> Manzil</div>
-      <p class="muted-text">Yangi Toshkent, Gulzor MFY<br>Moʻljal: Yangi Qoʻyliq bozori, Food City koʻchasi<br><span style="color:var(--gold-soft)">Jumaday tashqari har kuni qabul bor</span></p>
+      <div class="card-title">Manzil</div>
+      <p class="muted-text">Yangi Toshkent, Gulzor MFY<br>Yangi Qo'yliq bozori, Food City ko'chasi</p>
     </div>
     <div class="card">
-      <div class="card-title"><span class="icon">📅</span> Sanani tanlang</div>
+      <div class="card-title">Sanani tanlang</div>
       <div class="date-grid" id="date-grid"></div>
     </div>
     <div class="card">
-      <div class="card-title"><span class="icon">⏰</span> Vaqtni tanlang</div>
+      <div class="card-title">Vaqtni tanlang</div>
       <div class="time-grid">
-        <div class="date-btn time-btn" data-time="07:00"><span class="date-day">07:00</span><span class="date-wd">Ertalab</span></div>
-        <div class="date-btn time-btn" data-time="20:00"><span class="date-day">20:00</span><span class="date-wd">Kechqurun</span></div>
+        <div class="date-btn time-btn" data-time="07:00">
+          <span class="date-day">07:00</span><span class="date-wd">Ertalab</span>
+        </div>
+        <div class="date-btn time-btn" data-time="20:00">
+          <span class="date-day">20:00</span><span class="date-wd">Kechqurun</span>
+        </div>
       </div>
     </div>
-    <p id="offline-confirm-text" style="text-align:center;font-size:.85rem;color:var(--tg-hint);margin:4px 0 8px"></p>
-    <p id="offline-error" class="field-error" style="text-align:center"></p>
+    <p id="offline-selected" class="muted-text" style="text-align:center;margin-bottom:6px"></p>
+    <p id="offline-error" class="field-error" style="display:none;text-align:center;margin-bottom:6px"></p>
     <div class="bottom-nav">
       <button class="btn btn-primary" id="btn-offline-confirm">Tasdiqlash</button>
     </div>
   </div>
 
-  <!-- ══ SCREEN: MA'LUMOTLAR ══ -->
-  <div id="s-malumot" class="screen">
+  <!-- MA'LUMOTLAR -->
+  <div id="s-info" class="screen">
     <div class="section-header">
-      <span class="section-emoji"></span>
-      <h2 class="section-title">Maʼlumotlar</h2>
+      <h2 class="section-title">Ma'lumotlar</h2>
     </div>
     <div class="info-cards">
       <div class="info-card-btn" data-info="domla">
@@ -395,100 +326,41 @@
         <span class="ic-label">Markaz haqida</span><span class="ic-arrow">›</span>
       </div>
       <div class="info-card-btn" data-info="manzil">
-        <span class="ic-label">Manzil va xarita</span><span class="ic-arrow">›</span>
+        <span class="ic-label">Manzil</span><span class="ic-arrow">›</span>
       </div>
     </div>
   </div>
 
-  <!-- ══ SCREEN: MA'LUMOT DETAIL ══ -->
-  <div id="s-malumot-detail" class="screen">
-    <div class="result-card" id="malumot-content"></div>
-    <div id="map-container" style="display:none;margin-top:14px">
-      <iframe id="map-iframe" width="100%" height="250" style="border:0;border-radius:var(--radius)" allowfullscreen loading="lazy"></iframe>
+  <!-- MA'LUMOT DETAIL -->
+  <div id="s-info-detail" class="screen">
+    <div class="result-card" id="info-content"></div>
+    <div id="map-wrap" style="display:none;margin-top:10px">
+      <iframe id="map-frame" width="100%" height="220"
+        style="border:0;border-radius:var(--r)" allowfullscreen loading="lazy"></iframe>
     </div>
     <div class="bottom-nav">
-      <button class="btn btn-secondary" data-goto="s-malumot">Orqaga</button>
+      <button class="btn btn-secondary" data-goto="s-info">← Orqaga</button>
     </div>
   </div>
 
-  <!-- ══ SCREEN: SAVOL-JAVOB ══ -->
-  <div id="s-savol" class="screen">
-    <div class="section-header">
-      <span class="section-emoji"></span>
-      <h2 class="section-title">Savol-javob</h2>
-      <p class="section-sub">Savolingizni yozing — menejerimiz tez orada javob beradi</p>
-    </div>
-    <div class="card">
-      <div class="form-group">
-        <label class="form-label">Savolingiz</label>
-        <textarea id="savol-text" class="form-textarea" placeholder="Savolingizni bu yerga yozing..."></textarea>
-        <p id="savol-error" class="field-error"></p>
-      </div>
-    </div>
-    <div class="bottom-nav">
-      <button class="btn btn-primary" id="btn-savol-submit">Yuborish</button>
-    </div>
-  </div>
-
-  <!-- ══ SCREEN: YAKUNIY ══ -->
+  <!-- YAKUNIY EKRAN -->
   <div id="s-final" class="screen">
-    <div class="success-icon" id="final-icon">✅</div>
+    <div class="success-icon" id="final-icon"></div>
     <div class="result-card">
-      <div class="result-title" id="final-title">Natija</div>
+      <div class="result-title" id="final-title"></div>
       <div class="result-body" id="final-body"></div>
     </div>
-    <div id="final-extra" style="margin-top:10px"></div>
+    <div id="final-extra" style="margin-top:8px"></div>
     <div class="bottom-nav">
-      <button class="btn btn-primary" data-goto="s-menu">🏠 Bosh menyuga</button>
+      <button class="btn btn-primary" data-goto="s-menu">Bosh menyu</button>
       <button class="btn btn-ghost" id="btn-close">Yopish</button>
     </div>
   </div>
 
-  <!-- ══ SCREEN: SEANS TUGADI — ALOMATLARNI BELGILASH ══ -->
-  <div id="s-after-listen" class="screen">
-    <div class="section-header">
-      <span class="section-emoji"></span>
-      <h2 class="section-title">Seans tugadi</h2>
-      <p class="section-sub" id="after-listen-sub">1-seans • Qaysi alomatlar yaxshilandi yoki yoʻqoldi?</p>
-    </div>
-
-    <div class="card">
-      <div class="card-title"><span class="icon">📊</span> Seans statistikasi</div>
-      <div id="session-stats" class="track-stat-wrap"></div>
-    </div>
-
-    <div class="info-box" style="margin-bottom:14px">
-      ✅ Yaxshilangan yoki yoʻqolgan alomatlarni belgilang
-    </div>
-
-    <div class="sel-count" id="after-resolved-count">Hech narsa belgilanmadi</div>
-    <div class="symptom-list" id="after-symptom-list"></div>
-
-    <div class="bottom-nav">
-      <div class="nav-hint">Oʻzgarish boʻlmasa ham davom etish mumkin</div>
-      <button class="btn btn-primary" id="btn-after-save">Saqlash</button>
-    </div>
-  </div>
-
-  <!-- ══ SCREEN: TARIX — BARCHA SEANSLAR ══ -->
-  <div id="s-history" class="screen">
-    <div class="section-header">
-      <span class="section-emoji"></span>
-      <h2 class="section-title">Seanslar tarixi</h2>
-      <p class="section-sub">Har bir seans natijasi</p>
-    </div>
-    <div id="history-list"></div>
-    <div class="bottom-nav">
-      <button class="btn btn-primary" data-goto="s-ruqiya-listen">Yangi seans</button>
-    </div>
-  </div>
-
-
 </div>
+
 <script>
-  // Audio fayl URL
   const RUQIYA_AUDIO_URL = "https://drive.google.com/uc?export=download&id=1ejYibKBvkurohRF5GZ99NL6j-cpPJLVj";
-  // API_BASE_URL kerak emas — barcha ma'lumotlar Telegram bot orqali yoziladi
 </script>
 <script src="app.js"></script>
 </body>
