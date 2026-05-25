@@ -176,15 +176,20 @@ body {
   color: var(--muted); margin-bottom: 5px;
 }
 .form-input, .form-textarea {
-  width: 100%; background: var(--surface);
+  width: 100%; background: #ffffff;
   border: 1px solid var(--border); border-radius: var(--r2);
   padding: 10px 11px; font-family: var(--f); font-size: .85rem;
-  color: var(--text); outline: none; transition: border-color .15s;
+  color: #1a1916 !important; outline: none; transition: border-color .15s;
   -webkit-appearance: none; min-width: 0;
+  -webkit-text-fill-color: #1a1916;
 }
 .form-input:focus, .form-textarea:focus { border-color: var(--text); }
 .form-textarea { resize: none; min-height: 96px; line-height: 1.5; }
-.form-input::placeholder, .form-textarea::placeholder { color: var(--ph); }
+.form-input::placeholder, .form-textarea::placeholder {
+  color: #b8b3aa !important;
+  -webkit-text-fill-color: #b8b3aa;
+  opacity: 1;
+}
 .field-error { color: var(--red); font-size: .72rem; display: none; margin-top: 4px; }
 
 /* BUTTONS */
