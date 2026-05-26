@@ -1,5 +1,31 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
+/* ── TELEGRAM MINI APP RESET ── */
+input, textarea, select, button {
+  -webkit-text-fill-color: inherit;
+  color: inherit;
+}
+input[type="text"],
+input[type="number"],
+input[type="tel"],
+input[type="email"],
+textarea {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
+  opacity: 1 !important;
+  border-radius: 8px;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+input::placeholder,
+textarea::placeholder {
+  color: #999693 !important;
+  -webkit-text-fill-color: #999693 !important;
+  opacity: 1 !important;
+}
+
+
 /* ── VARIABLES ─────────────────────────────────────────────────── */
 :root {
   --bg:      #f5f3ef;
