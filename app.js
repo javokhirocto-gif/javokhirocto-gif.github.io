@@ -341,8 +341,10 @@ function renderOffline() {
 
 function updateOfflineLabel() {
   const e = el("offline-selected");
+  const block = el("offline-confirm-block");
   if (e && S.offline_date && S.offline_time) {
-    e.textContent = `${S.offline_date}  ${S.offline_time}`;
+    e.textContent = `${S.offline_date} — ${S.offline_time}`;
+    if (block) block.style.display = "block";
   }
 }
 
