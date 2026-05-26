@@ -5,13 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>TIB VA DAM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="app">
 
+  <!-- HEADER -->
   <div class="app-header">
     <div class="app-logo">TIB<span>VADAM</span></div>
     <div class="app-tagline">Ruhiy holatni aniqlash platformasi</div>
@@ -20,13 +21,11 @@
     <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
     <span class="progress-label"></span>
   </div>
-
-  <!-- BACK BAR -->
   <div id="back-bar" style="display:none">
     <button id="btn-back" class="btn-back">← Orqaga</button>
   </div>
 
-  <!-- MENU -->
+  <!-- ══ MENU ══ -->
   <div id="s-menu" class="screen">
     <div class="menu-grid">
       <div class="menu-card" data-goto="s-uyqu" data-need-reg="1">
@@ -44,45 +43,53 @@
     </div>
     <div class="card">
       <div class="card-title">TIB VA DAM markazi</div>
-      <p class="muted-text">📍 Yangi Toshkent, Gulzor MFY<br>Har kuni (jumaday tashqari): 07:00 va 20:00</p>
+      <p class="muted-text" style="line-height:1.7">
+        📍 Yangi Toshkent, Gulzor MFY<br>
+        Yangi Qo'yliq bozori, Food City ko'chasi<br>
+        🕐 Har kuni (jumaday tashqari): 07:00 va 20:00
+      </p>
     </div>
   </div>
 
-  <!-- REGISTER -->
+  <!-- ══ REGISTER ══ -->
   <div id="s-register" class="screen">
     <div class="section-header">
       <h2 class="section-title">Ro'yxatdan o'tish</h2>
-      <p class="section-sub">Bu ma'lumotlar faqat bir marta so'raladi</p>
+      <p class="section-sub">Bir marta to'ldiriladi. Ma'lumotlar xavfsiz saqlanadi.</p>
     </div>
     <div class="card">
       <div class="form-group">
         <label class="form-label">Ism va familiya</label>
-        <input id="reg-name" class="form-input" type="text" placeholder="masalan: Alisher Navoiy" autocomplete="name">
+        <input id="reg-name" class="form-input" type="text"
+          placeholder="Alisher Navoiy" autocomplete="name">
       </div>
       <div class="form-group">
         <label class="form-label">Yosh</label>
-        <input id="reg-age" class="form-input" type="number" placeholder="masalan: 28" min="5" max="120">
+        <input id="reg-age" class="form-input" type="number"
+          placeholder="28" min="5" max="120">
       </div>
       <div class="form-group">
         <label class="form-label">Viloyat / Shahar</label>
-        <input id="reg-region" class="form-input" type="text" placeholder="masalan: Toshkent">
+        <input id="reg-region" class="form-input" type="text"
+          placeholder="Toshkent">
       </div>
       <div class="form-group">
         <label class="form-label">Telefon raqam</label>
-        <input id="reg-phone" class="form-input" type="tel" placeholder="+998 90 123 45 67">
+        <input id="reg-phone" class="form-input" type="tel"
+          placeholder="+998 90 123 45 67" autocomplete="tel">
       </div>
-      <p id="reg-error" class="field-error"></p>
     </div>
+    <p id="reg-error" class="field-error" style="margin: -4px 0 12px; text-align:center"></p>
     <div class="bottom-nav">
       <button class="btn btn-primary" id="btn-reg">Davom etish →</button>
     </div>
   </div>
 
-  <!-- UYQUDAGI ALOMATLAR -->
+  <!-- ══ UYQUDAGI ALOMATLAR ══ -->
   <div id="s-uyqu" class="screen">
     <div class="section-header">
       <h2 class="section-title">Uyqudagi alomatlar</h2>
-      <p class="section-sub">1-bo'lim: Tushlar va uyqudagi holatlarga tegishli alomatlar</p>
+      <p class="section-sub">1-bo'lim · Tushlar va uyquda kuzatayotgan alomatlar</p>
     </div>
     <div class="sel-count" id="uyqu-count">Hech narsa belgilanmadi</div>
     <div class="symptom-list" id="uyqu-list"></div>
@@ -92,11 +99,11 @@
     </div>
   </div>
 
-  <!-- O'NGIDAGI ALOMATLAR -->
+  <!-- ══ O'NGIDAGI ALOMATLAR ══ -->
   <div id="s-ongi" class="screen">
     <div class="section-header">
       <h2 class="section-title">O'ngidagi alomatlar</h2>
-      <p class="section-sub">2-bo'lim: Kundalik hayotda, uyg'oq vaqtda sezayotgan alomatlar</p>
+      <p class="section-sub">2-bo'lim · Uyg'oq paytda, kundalik hayotda kuzatayotgan alomatlar</p>
     </div>
     <div class="sel-count" id="ongi-count">Hech narsa belgilanmadi</div>
     <div class="symptom-list" id="ongi-list"></div>
@@ -106,11 +113,11 @@
     </div>
   </div>
 
-  <!-- XONADONDAGI ALOMATLAR -->
+  <!-- ══ XONADONDAGI ALOMATLAR ══ -->
   <div id="s-xon" class="screen">
     <div class="section-header">
       <h2 class="section-title">Xonadondagi alomatlar</h2>
-      <p class="section-sub">3-bo'lim: Uyingizda yoki ishxonangizda kuzatayotgan alomatlar</p>
+      <p class="section-sub">3-bo'lim · Uyda yoki ishxonada kuzatayotgan alomatlar</p>
     </div>
     <div class="sel-count" id="xon-count">Hech narsa belgilanmadi</div>
     <div class="symptom-list" id="xon-list"></div>
@@ -120,67 +127,76 @@
     </div>
   </div>
 
-  <!-- SHIKOYAT -->
+  <!-- ══ SHIKOYAT ══ -->
   <div id="s-complaint" class="screen">
     <div class="section-header">
       <h2 class="section-title">Holatingizni tasvirlang</h2>
-      <p class="section-sub">O'z so'zlaringiz bilan yozing</p>
+      <p class="section-sub">O'z so'zlaringiz bilan batafsil yozing</p>
     </div>
     <div class="card">
       <div class="card-title">Belgilangan alomatlar</div>
-      <div class="sym-summary" id="complaint-summary"></div>
+      <div class="sym-summary" id="complaint-summary">
+        <span class="muted-text">Alomatlar belgilanmagan</span>
+      </div>
     </div>
     <div class="card">
       <div class="form-group">
-        <label class="form-label">Batafsil tasvirlang</label>
+        <label class="form-label">Holatingizni tasvirlang</label>
         <textarea id="complaint-text" class="form-textarea"
-          placeholder="masalan: Uch oydan beri uxlay olmayapman, tushimda yomon narsalar ko'raman..."></textarea>
-        <p id="complaint-error" class="field-error"></p>
+          placeholder="masalan: Uch oydan beri uxlay olmayapman, tushimda yomon narsalar ko'raman, uyda o'zimni yaxshi his qilmayman..."></textarea>
       </div>
     </div>
+    <p id="complaint-error" class="field-error" style="text-align:center;margin-bottom:10px"></p>
     <div class="bottom-nav">
       <button class="btn btn-primary" id="btn-complaint">Tahlil qilish →</button>
     </div>
   </div>
 
-  <!-- LOADING -->
+  <!-- ══ LOADING ══ -->
   <div id="s-loading" class="screen">
     <div class="loading-screen">
       <div class="spinner"></div>
       <div class="loading-text" id="loading-text">Tahlil qilinmoqda</div>
-      <p class="muted-text" style="text-align:center" id="loading-sub">Bot javob tayyorlamoqda</p>
+      <p class="muted-text" style="text-align:center" id="loading-sub">
+        Bot javob tayyorlamoqda, biroz sabr qiling
+      </p>
     </div>
   </div>
 
-  <!-- NATIJA -->
+  <!-- ══ NATIJA ══ -->
   <div id="s-result" class="screen">
     <div class="section-header">
       <h2 class="section-title">Tahlil natijasi</h2>
       <p class="section-sub" id="result-count"></p>
     </div>
+
     <div class="card">
       <div class="card-title">Belgilangan alomatlar</div>
-      <div class="sym-summary" id="result-symptoms"></div>
+      <div class="sym-summary" id="result-symptoms">
+        <span class="muted-text">—</span>
+      </div>
     </div>
+
     <div class="result-card">
       <div class="result-title">Holat tavsifi</div>
       <div class="result-body" id="result-body">
-        Natija Telegram chatda yuborildi.
+        Natija Telegram chatda yuborildi. Quyida keyingi qadamni tanlang.
       </div>
     </div>
-    <div class="warn-box">Barcha javoblar taxminiy. Yakuniy qaror mutaxassis ko'rigidan so'ng aniqlanadi.</div>
 
-    <!-- Birinchi tavsiya: Offline -->
+    <div class="warn-box">
+      ⚠️ Barcha javoblar taxminiy. Yakuniy qaror mutaxassis ko'rigidan so'ng aniqlanadi.
+    </div>
+
     <div class="rec-card rec-card-primary" id="btn-goto-offline">
       <div class="rec-label">Birinchi tavsiya</div>
       <div class="rec-title">TIB VA DAM ga tashrif yozish</div>
-      <div class="rec-desc">Tabib ko'rigidan o'tib, holatning asl sababini aniqlash va tuzatish</div>
+      <div class="rec-desc">Tabib ko'rigidan o'tib holatning asl sababini aniqlash va tuzatish</div>
       <div class="rec-arrow">Tashrif yozish →</div>
     </div>
 
     <div class="divider">yoki</div>
 
-    <!-- Ikkinchi variant: Online -->
     <div class="rec-card rec-card-secondary" id="btn-goto-ruqiya">
       <div class="rec-label">Tashrif imkoni bo'lmasa</div>
       <div class="rec-title">Onlayn ruqiya orqali</div>
@@ -189,168 +205,218 @@
     </div>
   </div>
 
-  <!-- ONLAYN RUQIYA -->
+  <!-- ══ ONLAYN RUQIYA ══ -->
   <div id="s-ruqiya" class="screen">
     <div class="section-header">
       <h2 class="section-title">Onlayn ruqiya</h2>
-      <p class="section-sub">11 kun davomida, tong va kechqurun tinglang</p>
+      <p class="section-sub">11 kun davomida tong va kechqurun tinglang</p>
     </div>
+
     <div class="card">
       <div class="card-title">Tinglash tartibi</div>
-      <p class="muted-text">1. Tahorat oling, 2 rakat hojat namozini o'qing<br>
-      2. Tinch xonada, ko'zni yumgan holda tinglang<br>
-      3. Naushnik yoki kolonka orqali eshiting</p>
+      <p class="muted-text" style="line-height:1.8">
+        1. Tahorat oling, 2 rakat hojat namozini o'qing<br>
+        2. Tinch xonada, ko'zni yumgan holda tinglang<br>
+        3. Naushnik yoki kolonka orqali eshiting
+      </p>
     </div>
-    <div class="notice-box">Terlash, titroq, bosh og'rishi — shifo jarayoni boshlanganidan darak.</div>
 
-    <!-- Audio player -->
-    <div class="audio-player-wrap" id="audio-wrap">
+    <div class="notice-box">
+      Terlash, titroq, bosh og'rishi — shifo jarayoni boshlanganidan darak.
+    </div>
+
+    <div class="audio-player-wrap">
       <div class="audio-player">
         <button class="audio-play-btn" id="audio-play-btn">
-          <svg id="icon-play" width="36" height="36" viewBox="0 0 36 36" fill="none">
-            <circle cx="18" cy="18" r="17" stroke="#1a1916" stroke-width="1.5"/>
-            <path d="M14 12.5L24 18L14 23.5V12.5Z" fill="#1a1916"/>
+          <svg id="icon-play" width="44" height="44" viewBox="0 0 44 44" fill="none">
+            <circle cx="22" cy="22" r="21" stroke="#1a1916" stroke-width="1.5"/>
+            <path d="M17 15L31 22L17 29V15Z" fill="#1a1916"/>
           </svg>
-          <svg id="icon-pause" width="36" height="36" viewBox="0 0 36 36" fill="none" style="display:none">
-            <circle cx="18" cy="18" r="17" stroke="#1a1916" stroke-width="1.5"/>
-            <rect x="12" y="12" width="4" height="12" rx="1.5" fill="#1a1916"/>
-            <rect x="20" y="12" width="4" height="12" rx="1.5" fill="#1a1916"/>
+          <svg id="icon-pause" width="44" height="44" viewBox="0 0 44 44" fill="none" style="display:none">
+            <circle cx="22" cy="22" r="21" stroke="#1a1916" stroke-width="1.5"/>
+            <rect x="14" y="14" width="5" height="16" rx="2" fill="#1a1916"/>
+            <rect x="25" y="14" width="5" height="16" rx="2" fill="#1a1916"/>
           </svg>
         </button>
         <div class="audio-info">
           <div class="audio-title">Ruqiya audiosi</div>
           <div class="audio-progress-wrap">
-            <div class="audio-progress-bar"><div class="audio-progress-fill" id="audio-prog"></div></div>
+            <div class="audio-progress-bar">
+              <div class="audio-progress-fill" id="audio-prog"></div>
+            </div>
             <span class="audio-time" id="audio-time">0:00</span>
           </div>
         </div>
       </div>
       <audio id="ruqiya-audio" preload="none"></audio>
-      <p class="muted-text" id="audio-no-file" style="text-align:center;margin-top:8px;display:none">
+      <p id="audio-no-file" class="muted-text"
+        style="text-align:center;margin-top:10px;padding:12px;background:var(--bg2);border-radius:var(--r2);display:none">
         Audio fayl yuklanmagan. Menejerdan so'rang.
       </p>
     </div>
 
-    <button class="btn btn-primary" id="btn-after-listen" style="display:none">
-      Seansdan so'ng alomatlarni belgilash
+    <button class="btn btn-primary" id="btn-after-listen" style="display:none;margin-bottom:8px">
+      Seans tugadi — alomatlarni belgilash
     </button>
-    <button class="btn btn-secondary" data-goto="s-history">Seanslar tarixi</button>
+    <button class="btn btn-secondary" data-goto="s-check" style="margin-bottom:8px">
+      11 kun tugadi — tekshirish
+    </button>
+    <button class="btn btn-ghost" data-goto="s-history">
+      Seanslar tarixi
+    </button>
   </div>
 
-  <!-- 11 KUN TEKSHIRISH -->
+  <!-- ══ 11 KUN TEKSHIRISH ══ -->
   <div id="s-check" class="screen">
     <div class="section-header">
-      <h2 class="section-title">11 kundan so'ng ta'sir</h2>
-      <p class="section-sub">Qanday o'zgarish sezdingiz?</p>
+      <h2 class="section-title">11 kundan so'ng</h2>
+      <p class="section-sub">Ruqiya qanday ta'sir qildi?</p>
     </div>
     <div class="effect-btns">
       <div class="effect-btn" data-effect="yes">
-        <div><div class="effect-label">Ha, ta'sir bor</div><div class="effect-sub">Allohga shukr, yaxshilanmoqda</div></div>
+        <div>
+          <div class="effect-label">Ha, ta'sir bor</div>
+          <div class="effect-sub">Allohga shukr, holat yaxshilanmoqda</div>
+        </div>
       </div>
       <div class="effect-btn" data-effect="continue">
-        <div><div class="effect-label">Davom etmoqda</div><div class="effect-sub">Ozgina o'zgarish bor</div></div>
+        <div>
+          <div class="effect-label">Davom etmoqda</div>
+          <div class="effect-sub">Ozgina o'zgarish bor, davom etaman</div>
+        </div>
       </div>
       <div class="effect-btn" data-effect="no">
-        <div><div class="effect-label">O'zgarish sezmadim</div><div class="effect-sub">Shaxsan tashrif tavsiya etiladi</div></div>
+        <div>
+          <div class="effect-label">O'zgarish sezmadim</div>
+          <div class="effect-sub">Shaxsan tashrif tavsiya etiladi</div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- KUZATUV — seans tugagandan keyin -->
+  <!-- ══ KUZATUV ══ -->
   <div id="s-tracking" class="screen">
     <div class="section-header">
       <h2 class="section-title">Alomatlarni belgilash</h2>
       <p class="section-sub" id="tracking-sub">Qaysi alomatlar yo'qoldi yoki kamaydi?</p>
     </div>
-    <div class="card" id="track-stats"></div>
+    <div class="card" id="track-stats">
+      <div class="muted-text" style="text-align:center">Yuklanmoqda...</div>
+    </div>
+    <div class="info-box" style="margin-bottom:12px">
+      ✅ Yo'qolgan yoki kamaygan alomatlarni belgilang
+    </div>
     <div class="symptom-list" id="track-list"></div>
     <div class="bottom-nav">
-      <div class="nav-hint">Yaxshilangan alomatlarni belgilang</div>
+      <div class="nav-hint">Belgilanganlar — yaxshilangan alomatlar</div>
       <button class="btn btn-primary" id="btn-track-save">Saqlash</button>
     </div>
   </div>
 
-  <!-- SEANSLAR TARIXI -->
+  <!-- ══ SEANSLAR TARIXI ══ -->
   <div id="s-history" class="screen">
     <div class="section-header">
       <h2 class="section-title">Seanslar tarixi</h2>
+      <p class="section-sub">Ruqiya seanslariningiz dinamikasi</p>
     </div>
     <div id="history-list"></div>
     <div class="bottom-nav">
-      <button class="btn btn-primary" data-goto="s-ruqiya">Yangi seans</button>
+      <button class="btn btn-primary" data-goto="s-ruqiya">Yangi seans boshlash</button>
     </div>
   </div>
 
-  <!-- OFFLINE TASHRIF -->
+  <!-- ══ TASHRIF YOZISH ══ -->
   <div id="s-offline" class="screen">
     <div class="section-header">
       <h2 class="section-title">Tashrif yozish</h2>
       <p class="section-sub">Qulay sana va vaqtni tanlang</p>
     </div>
+
     <div class="card">
-      <div class="card-title">Manzil</div>
-      <p class="muted-text">Yangi Toshkent, Gulzor MFY<br>Yangi Qo'yliq bozori, Food City ko'chasi</p>
+      <div class="card-title">Markaz manzili</div>
+      <p class="muted-text" style="line-height:1.8">
+        📍 Yangi Toshkent, Gulzor MFY<br>
+        Yangi Qo'yliq bozori, Food City ko'chasi<br>
+        🕐 Har kuni (jumaday tashqari): 07:00 va 20:00
+      </p>
     </div>
+
     <div class="card">
       <div class="card-title">Sanani tanlang</div>
       <div class="date-grid" id="date-grid"></div>
     </div>
+
     <div class="card">
       <div class="card-title">Vaqtni tanlang</div>
       <div class="time-grid">
         <div class="date-btn time-btn" data-time="07:00">
-          <span class="date-day">07:00</span><span class="date-wd">Ertalab</span>
+          <span class="date-day">07:00</span>
+          <span class="date-wd">Ertalab</span>
         </div>
         <div class="date-btn time-btn" data-time="20:00">
-          <span class="date-day">20:00</span><span class="date-wd">Kechqurun</span>
+          <span class="date-day">20:00</span>
+          <span class="date-wd">Kechqurun</span>
         </div>
       </div>
     </div>
-    <p id="offline-selected" class="muted-text" style="text-align:center;margin-bottom:6px"></p>
-    <p id="offline-error" class="field-error" style="display:none;text-align:center;margin-bottom:6px"></p>
+
+    <div id="offline-confirm-block" style="display:none" class="info-box">
+      ✅ Sana va vaqt tanlandi: <span id="offline-selected"></span>
+    </div>
+
+    <p id="offline-error" class="field-error"
+      style="display:none;text-align:center;margin-bottom:10px;font-size:.84rem"></p>
+
     <div class="bottom-nav">
       <button class="btn btn-primary" id="btn-offline-confirm">Tasdiqlash</button>
     </div>
   </div>
 
-  <!-- MA'LUMOTLAR -->
+  <!-- ══ MA'LUMOTLAR ══ -->
   <div id="s-info" class="screen">
     <div class="section-header">
       <h2 class="section-title">Ma'lumotlar</h2>
     </div>
     <div class="info-cards">
       <div class="info-card-btn" data-info="domla">
-        <span class="ic-label">Domla haqida</span><span class="ic-arrow">›</span>
+        <span class="ic-label">Sayfulloh domla haqida</span>
+        <span class="ic-arrow">›</span>
       </div>
       <div class="info-card-btn" data-info="markaz">
-        <span class="ic-label">Markaz haqida</span><span class="ic-arrow">›</span>
+        <span class="ic-label">TIB VA DAM markazi</span>
+        <span class="ic-arrow">›</span>
       </div>
       <div class="info-card-btn" data-info="manzil">
-        <span class="ic-label">Manzil</span><span class="ic-arrow">›</span>
+        <span class="ic-label">Manzil va xarita</span>
+        <span class="ic-arrow">›</span>
       </div>
     </div>
   </div>
 
-  <!-- MA'LUMOT DETAIL -->
+  <!-- ══ MA'LUMOT DETAIL ══ -->
   <div id="s-info-detail" class="screen">
-    <div class="result-card" id="info-content"></div>
-    <div id="map-wrap" style="display:none;margin-top:10px">
-      <iframe id="map-frame" width="100%" height="220"
-        style="border:0;border-radius:var(--r)" allowfullscreen loading="lazy"></iframe>
+    <div class="result-card" id="info-content">
+      <div class="muted-text">Yuklanmoqda...</div>
     </div>
-    <div class="bottom-nav">
-      <button class="btn btn-secondary" data-goto="s-info">← Orqaga</button>
+    <div id="map-wrap" style="display:none;margin-top:12px">
+      <iframe id="map-frame" width="100%" height="240"
+        style="border:0;border-radius:var(--r)"
+        allowfullscreen loading="lazy"></iframe>
     </div>
+    <div style="height:16px"></div>
+    <button class="btn btn-secondary" data-goto="s-info">← Orqaga</button>
   </div>
 
-  <!-- YAKUNIY EKRAN -->
+  <!-- ══ FINAL ══ -->
   <div id="s-final" class="screen">
-    <div class="success-icon" id="final-icon"></div>
+    <div style="text-align:center;margin:20px 0 4px">
+      <div class="success-icon" id="final-icon">✓</div>
+    </div>
     <div class="result-card">
       <div class="result-title" id="final-title"></div>
       <div class="result-body" id="final-body"></div>
     </div>
-    <div id="final-extra" style="margin-top:8px"></div>
+    <div id="final-extra" style="margin-top:10px"></div>
     <div class="bottom-nav">
       <button class="btn btn-primary" data-goto="s-menu">Bosh menyu</button>
       <button class="btn btn-ghost" id="btn-close">Yopish</button>
