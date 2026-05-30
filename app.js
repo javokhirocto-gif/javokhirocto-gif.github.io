@@ -553,5 +553,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ── START ── */
   initAudio();
-  go('s-register'); // Всегда начинаем с регистрации
+
+  // Начинаем с регистрации
+  setTimeout(() => {
+    console.log('[TVD] Starting, going to s-register');
+    go('s-register');
+  }, 100);
 });
