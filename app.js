@@ -1,381 +1,557 @@
-<!DOCTYPE html>
-<html lang="uz">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="color-scheme" content="light">
-  <title>TIB VA DAM</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div id="app">
+/* TIB VA DAM Mini App
+   Arxitektura: FAQAT tg.sendData() — HTTP yo'q, CORS yo'q */
 
-  <div class="app-header">
-    <div class="app-logo">TIB <span>VA DAM</span></div>
-    <div class="app-tagline">Ruhiy Salomatlikni Aniqlash Platformasi</div>
-  </div>
-  <div class="progress-wrap">
-    <div class="progress-bar"><div class="progress-fill" id="pbar" style="width:0%"></div></div>
-  </div>
-  <div id="back-bar" style="display:none">
-    <button id="btn-back" class="btn-back">← Orqaga</button>
-  </div>
+const tg = window.Telegram?.WebApp || null;
+if (tg) {
+  tg.ready();
+  tg.expand();
+  tg.enableClosingConfirmation();
+}
 
-  <!-- ════ MENU ════ -->
-  <div id="s-menu" class="screen">
-    <div class="ph">
-      <div class="ph-title">Assalomu alaykum</div>
-      <div class="ph-sub">Quyidagi bo'limlardan birini tanlang</div>
-    </div>
-    <div class="menu-grid">
-      <div class="tile tile-dark" data-goto="s-uyqu" data-reg="1">
-        <div class="tile-icon">🔍</div>
-        <div class="tile-label">Holatimni aniqlash</div>
-        <div class="tile-arrow">›</div>
-      </div>
-      <div class="tile" data-goto="s-ruqiya">
-        <div class="tile-icon">🎧</div>
-        <div class="tile-label">Onlayn ruqiya</div>
-        <div class="tile-arrow">›</div>
-      </div>
-      <div class="tile" data-goto="s-offline" data-reg="1">
-        <div class="tile-icon">📅</div>
-        <div class="tile-label">Tashrif yozish</div>
-        <div class="tile-arrow">›</div>
-      </div>
-      <div class="tile" data-goto="s-info">
-        <div class="tile-icon">ℹ️</div>
-        <div class="tile-label">Ma'lumotlar</div>
-        <div class="tile-arrow">›</div>
-      </div>
-    </div>
-    <div class="info-block">
-      <p><strong>📍 TIB VA DAM markazi</strong><br>
-      Yangi Toshkent, Gulzor MFY<br>
-      Jumaday tashqari har kuni: 07:00 va 20:00</p>
-    </div>
-  </div>
+/* Botga yuborish */
+function send(action, payload = {}) {
+  const data = JSON.stringify({ action, ...payload });
+  console.log('[sendData →]', action, payload);
+  if (tg && tg.sendData) {
+    tg.sendData(data);
+  } else {
+    console.warn('tg.sendData mavjud emas — browser tashqarisida test');
+  }
+}
 
-  <!-- ════ REGISTER ════ -->
-  <div id="s-register" class="screen">
-    <div class="ph">
-      <div class="ph-title">Ro'yxatdan o'tish</div>
-      <div class="ph-sub">Bir marta to'ldiriladi</div>
-    </div>
-    <div class="field">
-      <label class="field-lbl">Ism va familiya</label>
-      <input id="reg-name" class="finput" type="text" placeholder="Alisher Navoiy" autocomplete="name">
-    </div>
-    <div class="field">
-      <label class="field-lbl">Yosh</label>
-      <input id="reg-age" class="finput" type="number" placeholder="28" min="5" max="120">
-    </div>
-    <div class="field">
-      <label class="field-lbl">Viloyat / Shahar</label>
-      <input id="reg-region" class="finput" type="text" placeholder="Toshkent">
-    </div>
-    <div class="field">
-      <label class="field-lbl">Telefon raqam</label>
-      <input id="reg-phone" class="finput" type="tel" placeholder="+998 90 123 45 67"
-        autocomplete="tel" inputmode="tel">
-    </div>
-    <div id="reg-err" class="ferr" style="margin-bottom:8px"></div>
-    <button class="btn btn-black" id="btn-reg" style="margin-top:8px;margin-bottom:32px">Davom etish →</button>
-  </div>
+const AUDIO = (typeof RUQIYA_AUDIO_URL !== 'undefined') ? RUQIYA_AUDIO_URL : '';
 
-  <!-- ════ UYQUDAGI ════ -->
-  <div id="s-uyqu" class="screen">
-    <div class="ph">
-      <div class="ph-title">Uyqudagi alomatlar</div>
-      <div class="ph-sub">1-bo'lim · Tushlar va uyqudagi holatlar</div>
-    </div>
-    <div class="count-pill empty" id="uyqu-pill">Hech narsa belgilanmadi</div>
-    <div class="sym-list" id="uyqu-list"></div>
-    <div class="sticky">
-      <div class="sticky-hint">Birortasi bo'lmasa ham davom etish mumkin</div>
-      <button class="btn btn-black" id="btn-uyqu">Keyingisi →</button>
-    </div>
-  </div>
+/* ── DATA ── */
+const UYQU = [
+  ["Uyquga ketishi bilan cho'chib uyg'onish","u01"],
+  ["Uyquda yurak havliqib uyg'onish","u02"],
+  ["Ilon yoki ilonlarning hujum qilishi","u03"],
+  ["It, mushuk (tushda)","u04"],
+  ["Sichqon, kalamush (tushda)","u05"],
+  ["Chayon, kaltakesak (tushda)","u06"],
+  ["Tushunarsiz junli hayvonlar","u07"],
+  ["Hojatxona, ahlatxona (tushda)","u08"],
+  ["Suqmoq yo'llar (tushda)","u09"],
+  ["Qabristonlar (tushda)","u10"],
+  ["Mayitlar, chaqaloqlar (tushda)","u11"],
+  ["Loyqa suvlar (tushda)","u12"],
+  ["Yong'in, falokat (tushda)","u13"],
+  ["Suvga cho'kish (tushda)","u14"],
+  ["Tushunarsiz tugamas yo'llar","u15"],
+  ["Uyquda ovoz chiqarish","u16"],
+  ["Uyquda sovuq otish yoki terlash","u17"],
+  ["Pay yoki tomir tortib qolishi","u18"],
+  ["Zino qilish yoki zo'rlash (tushda)","u19"],
+  ["Yalang'och erkak va ayollar (tushda)","u20"],
+  ["Yaqinlari bilan yaqinlik (tushda)","u21"],
+  ["Yonida kimdir yotgandek tuyulishi","u22"],
+  ["Uyquda nimadir bosishi","u23"],
+  ["Bakirish, ovozi chiqmay qolishi","u24"],
+];
+const ONGI = [
+  ["Ma'lum vaqtda bosh og'rig'i","o01"],
+  ["Holsizlik, charchoq, tinimsiz uyqu","o02"],
+  ["Tez asabiylashtish","o03"],
+  ["Sababsiz yurak siqilishi","o04"],
+  ["Og'riqlar ko'chib yurishi","o05"],
+  ["Yelka kuraklarda yuk bordek yurish","o06"],
+  ["Ko'p esnash, kekirish","o07"],
+  ["Yurak atroflarida og'riq sanchiq","o08"],
+  ["Qo'l-oyoq uyushish","o09"],
+  ["Er-xotin aloqasi buzilishi","o10"],
+];
+const XON = [
+  ["Ayrim xonalarda bezovtalik","x01"],
+  ["Yotoq xonada bezovtalik","x02"],
+  ["Hammom va hojatxonada qo'rquv","x03"],
+  ["Ishxonada bezovtalik","x04"],
+  ["Qo'rquv turishi","x05"],
+  ["Yurak siqilishi (xonada)","x06"],
+  ["Ko'zga sharpa ko'rinishi","x07"],
+  ["Ovoz eshitilishi (xonada)","x08"],
+  ["Tezroq chiqib ketgisi kelishi","x09"],
+  ["Ko'chada yaxshi, uyda yomon","x10"],
+];
+const INFO_DATA = {
+  domla: {
+    title: 'Sayfulloh domla haqida',
+    body: `O'zbekiston Xalq Tabobati Assotsiatsiyasining rasmiy a'zosi.\n\nOliy ma'lumotli mutaxassis — Misr, Saudiya Arabistoni, Turkiya, Moskva va Sankt-Peterburgda tahsil olgan.\n\n"Ruhiy bezovtalik muolajasi" sohasida ixtisoslashgan tajribali Roqiy.`,
+    map: false,
+  },
+  markaz: {
+    title: 'TIB VA DAM markazi',
+    body: `📍 Yangi Toshkent, Gulzor MFY\nYangi Qo'yliq bozori, Food City ko'chasi\n\n🕐 Jumaday tashqari har kuni\n• Ertalab: 07:00\n• Kechqurun: 20:00`,
+    map: false,
+  },
+  manzil: {
+    title: 'Manzil',
+    body: `Yangi Toshkent, Gulzor MFY\nYangi Qo'yliq bozori, Food City ko'chasi\n\nJumaday tashqari har kuni: 07:00 va 20:00`,
+    map: true, lat: 41.3264, lon: 69.3728,
+  },
+};
 
-  <!-- ════ ONGIDAGI ════ -->
-  <div id="s-ongi" class="screen">
-    <div class="ph">
-      <div class="ph-title">O'ngidagi alomatlar</div>
-      <div class="ph-sub">2-bo'lim · Kundalik hayotda kuzatayotgan alomatlar</div>
-    </div>
-    <div class="count-pill empty" id="ongi-pill">Hech narsa belgilanmadi</div>
-    <div class="sym-list" id="ongi-list"></div>
-    <div class="sticky">
-      <div class="sticky-hint">Birortasi bo'lmasa ham davom etish mumkin</div>
-      <button class="btn btn-black" id="btn-ongi">Keyingisi →</button>
-    </div>
-  </div>
+/* ── STATE ── */
+const S = {
+  reg: false,
+  uyqu: new Set(), ongi: new Set(), xon: new Set(),
+  labels: [], remaining: [],
+  session: 0, resolved: new Set(),
+  date: '', time: '',
+};
 
-  <!-- ════ XONADONDAGI ════ -->
-  <div id="s-xon" class="screen">
-    <div class="ph">
-      <div class="ph-title">Xonadondagi alomatlar</div>
-      <div class="ph-sub">3-bo'lim · Uyda yoki ishxonada kuzatayotganlar</div>
-    </div>
-    <div class="count-pill empty" id="xon-pill">Hech narsa belgilanmadi</div>
-    <div class="sym-list" id="xon-list"></div>
-    <div class="sticky">
-      <div class="sticky-hint">Birortasi bo'lmasa ham davom etish mumkin</div>
-      <button class="btn btn-black" id="btn-xon">Davom etish →</button>
-    </div>
-  </div>
+function allLabels() {
+  const o = [];
+  UYQU.forEach(([l,k]) => S.uyqu.has(k) && o.push(l));
+  ONGI.forEach(([l,k]) => S.ongi.has(k) && o.push(l));
+  XON.forEach(([l,k])  => S.xon.has(k)  && o.push(l));
+  return o;
+}
+function labelsOf(data, sel) { return data.filter(([,k]) => sel.has(k)).map(([l]) => l); }
 
-  <!-- ════ SHIKOYAT ════ -->
-  <div id="s-complaint" class="screen">
-    <div class="ph">
-      <div class="ph-title">Holatingizni tasvirlang</div>
-      <div class="ph-sub">O'z so'zlaringiz bilan</div>
-    </div>
-    <span class="slabel">Belgilangan alomatlar</span>
-    <div class="tags" id="complaint-tags"></div>
-    <div class="field" style="margin-top:14px">
-      <label class="field-lbl">Batafsil yozing</label>
-      <textarea id="complaint-text" class="finput ftextarea"
-        placeholder="masalan: Uch oydan beri uxlay olmayapman, tushimda yomon narsalar ko'raman..."></textarea>
-    </div>
-    <div id="complaint-err" class="ferr"></div>
-    <div class="sticky">
-      <button class="btn btn-black" id="btn-complaint">Tahlil qilish →</button>
-    </div>
-  </div>
+function getSessions() {
+  try { return JSON.parse(localStorage.getItem('tvd_s') || '[]'); } catch { return []; }
+}
+function saveSession(d) {
+  const a = getSessions(); a.push(d);
+  try { localStorage.setItem('tvd_s', JSON.stringify(a)); } catch {}
+}
 
-  <!-- ════ LOADING ════ -->
-  <div id="s-loading" class="screen">
-    <div class="loading-wrap">
-      <div class="loader"></div>
-      <div class="loader-title" id="load-title">Tahlil qilinmoqda</div>
-      <div class="loader-sub" id="load-sub">Bot javob tayyorlamoqda</div>
-    </div>
-  </div>
+/* ── NAV ── */
+const PROGRESS = {
+  's-menu':0,'s-register':10,'s-uyqu':22,'s-ongi':40,'s-xon':58,
+  's-complaint':72,'s-loading':77,'s-result':82,'s-ruqiya':84,
+  's-check':88,'s-tracking':93,'s-history':60,
+  's-offline':90,'s-info':5,'s-info-detail':5,'s-final':100,
+};
+const BACK = {
+  's-register':'s-menu','s-uyqu':'s-menu','s-ongi':'s-uyqu','s-xon':'s-ongi',
+  's-complaint':'s-xon','s-result':'s-menu','s-ruqiya':'s-menu',
+  's-check':'s-ruqiya','s-tracking':'s-ruqiya','s-history':'s-ruqiya',
+  's-offline':'s-menu','s-info':'s-menu','s-info-detail':'s-info','s-final':'s-menu',
+};
+let cur = '';
 
-  <!-- ════ NATIJA ════ -->
-  <div id="s-result" class="screen">
-    <div class="ph">
-      <div class="ph-title">Tahlil natijasi</div>
-      <div class="ph-sub" id="result-sub"></div>
-    </div>
+const $ = id => document.getElementById(id);
 
-    <span class="slabel">Belgilangan alomatlar</span>
-    <div class="tags" id="result-tags"></div>
+function go(id) {
+  console.log('[go]', id);
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = $(id);
+  if (!el) { console.error('Screen topilmadi:', id); return; }
+  el.classList.add('active');
+  cur = id;
+  window.scrollTo({ top: 0 });
+  const pct = PROGRESS[id] || 0;
+  const pb = $('pbar'); if (pb) pb.style.width = pct + '%';
+  const bb = $('back-bar');
+  if (bb) bb.style.display = id === 's-menu' ? 'none' : 'block';
+  if (tg) id === 's-menu' ? tg.BackButton.hide() : tg.BackButton.show();
 
-    <div class="res-block" style="margin-top:12px">
-      <div class="res-label">Holat tavsifi</div>
-      <div class="res-text" id="result-body">Natija Telegram chatda yuborildi. Quyida keyingi qadamni tanlang.</div>
-    </div>
+  if (id === 's-uyqu')     buildList('uyqu-list', UYQU, S.uyqu, 'uyqu-pill');
+  if (id === 's-ongi')     buildList('ongi-list', ONGI, S.ongi, 'ongi-pill');
+  if (id === 's-xon')      buildList('xon-list',  XON,  S.xon,  'xon-pill');
+  if (id === 's-complaint') buildComplaint();
+  if (id === 's-result')   buildResult();
+  if (id === 's-tracking') buildTracking();
+  if (id === 's-history')  buildHistory();
+  if (id === 's-offline')  buildOffline();
+}
 
-    <div class="notice notice-warn">⚠️ Barcha javoblar taxminiy. Yakuniy qaror mutaxassis ko'rigidan so'ng aniqlanadi.</div>
+function needReg(dest) {
+  const REQ = ['s-uyqu','s-ongi','s-xon','s-complaint','s-result',
+    's-ruqiya','s-tracking','s-offline','s-history'];
+  if (REQ.includes(dest) && !S.reg) { go('s-register'); return true; }
+  return false;
+}
 
-    <div class="rec rec-main" id="btn-to-offline">
-      <div class="rec-badge">Birinchi tavsiya</div>
-      <div class="rec-title">TIB VA DAM ga tashrif</div>
-      <div class="rec-desc">Tabib ko'rigidan o'tib holatning asl sababini aniqlash</div>
-      <span class="rec-arrow">Tashrif yozish →</span>
-    </div>
+/* ── BUILD ── */
+function buildList(cid, data, sel, pillId) {
+  const c = $(cid); if (!c) return;
+  c.innerHTML = '';
+  const upd = () => {
+    const p = $(pillId); if (!p) return;
+    if (sel.size) { p.textContent = `${sel.size} ta belgilandi`; p.className = 'count-pill active'; }
+    else          { p.textContent = 'Hech narsa belgilanmadi';   p.className = 'count-pill empty'; }
+  };
+  data.forEach(([lbl, key]) => {
+    const row = document.createElement('div');
+    row.className = 'sym-item' + (sel.has(key) ? ' checked' : '');
+    row.innerHTML = `<div class="sym-box">
+      <svg class="sym-check" viewBox="0 0 14 14" fill="none">
+        <polyline points="2,7 5.5,10.5 12,3.5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div><span class="sym-text">${lbl}</span>`;
+    row.addEventListener('click', () => {
+      sel.has(key) ? (sel.delete(key), row.classList.remove('checked'))
+                   : (sel.add(key),    row.classList.add('checked'));
+      upd();
+    });
+    c.appendChild(row);
+  });
+  upd();
+}
 
-    <div class="or-div"><span>yoki</span></div>
+function buildComplaint() {
+  const lbl = allLabels();
+  const t = $('complaint-tags'); if (!t) return;
+  t.innerHTML = lbl.length
+    ? lbl.map(l => `<span class="tag">${l}</span>`).join('')
+    : '<span class="tag">Alomatlar belgilanmagan</span>';
+}
 
-    <div class="rec" id="btn-to-ruqiya">
-      <div class="rec-badge">Tashrif imkoni bo'lmasa</div>
-      <div class="rec-title">Onlayn ruqiya orqali</div>
-      <div class="rec-desc">O'z-o'zini davolash va alomatlarni kuzatib borish</div>
-      <span class="rec-arrow">Boshlash →</span>
-    </div>
-  </div>
+function buildResult() {
+  const lbl = allLabels();
+  S.labels = lbl;
+  if (!S.remaining.length) S.remaining = [...lbl];
+  const t = $('result-tags');
+  if (t) t.innerHTML = lbl.length ? lbl.map(l => `<span class="tag">${l}</span>`).join('') : '<span class="tag">—</span>';
+  const s = $('result-sub');
+  if (s) s.textContent = `${lbl.length} ta alomat aniqlandi`;
+}
 
-  <!-- ════ RUQIYA ════ -->
-  <div id="s-ruqiya" class="screen">
-    <div class="ph">
-      <div class="ph-title">Onlayn ruqiya</div>
-      <div class="ph-sub">11 kun davomida tong va kechqurun tinglang</div>
-    </div>
+function buildTracking() {
+  const rem = S.remaining.length ? S.remaining : S.labels;
+  const sub = $('track-sub');
+  if (sub) sub.textContent = `${S.session}-seans · Qaysi alomatlar yo'qoldi?`;
+  const stats = $('track-stats');
+  if (stats) stats.innerHTML = `
+    <div class="stat-box"><div class="stat-n">${S.labels.length}</div><div class="stat-l">Jami</div></div>
+    <div class="stat-box"><div class="stat-n g" id="res-num">${S.resolved.size}</div><div class="stat-l">Yo'qoldi</div></div>
+    <div class="stat-box"><div class="stat-n r" id="rem-num">${rem.length}</div><div class="stat-l">Qolgan</div></div>`;
+  S.resolved = new Set();
+  const c = $('track-list'); if (!c) return;
+  c.innerHTML = '';
+  if (!rem.length) {
+    c.innerHTML = '<div class="notice notice-info">🎉 Barcha alomatlar yo\'qoldi! Allohga shukr!</div>';
+    return;
+  }
+  rem.forEach((sym, i) => {
+    const row = document.createElement('div');
+    row.className = 'sym-item';
+    row.innerHTML = `<div class="sym-box">
+      <svg class="sym-check" viewBox="0 0 14 14" fill="none">
+        <polyline points="2,7 5.5,10.5 12,3.5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div><span class="sym-text">${sym}</span>`;
+    row.addEventListener('click', () => {
+      S.resolved.has(i) ? (S.resolved.delete(i), row.classList.remove('checked'))
+                        : (S.resolved.add(i),    row.classList.add('checked'));
+      const rn = $('res-num'), remn = $('rem-num');
+      if (rn)   rn.textContent   = S.resolved.size;
+      if (remn) remn.textContent = rem.length - S.resolved.size;
+    });
+    c.appendChild(row);
+  });
+}
 
-    <div class="info-block">
-      <p>1. Tahorat oling, 2 rakat hojat namozini o'qing<br>
-      2. Tinch xonada, ko'zni yumib tinglang<br>
-      3. Naushnik yoki kolonka orqali eshiting</p>
-    </div>
+function buildHistory() {
+  const c = $('history-list'); if (!c) return;
+  const list = getSessions();
+  const total = S.labels.length;
+  if (!list.length) {
+    c.innerHTML = '<div class="notice notice-plain" style="text-align:center">Hali hech qanday seans bo\'lmagan.</div>';
+    return;
+  }
+  const allRes = new Set(list.flatMap(s => s.res || []));
+  const pct = total > 0 ? Math.round(allRes.size / total * 100) : 0;
+  let html = `<div class="hist-summary">
+    <div class="hist-pct">${pct}%</div>
+    <div class="hist-lbl">Umumiy yaxshilanish · ${allRes.size} ta alomat yo'qoldi</div>
+    <div class="hist-bar"><div class="hist-bar-f" style="width:${pct}%"></div></div>
+  </div>`;
+  [...list].reverse().forEach((s, i) => {
+    const num = list.length - i;
+    const res = s.res || [], rem = s.rem || [];
+    const date = s.date ? new Date(s.date).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'}) : '—';
+    const sp = total > 0 ? Math.round(res.length / total * 100) : 0;
+    html += `<div class="hist-card">
+      <div class="hist-head"><span class="hist-num">${num}-seans</span><span class="hist-date">${date}</span></div>
+      <div class="hist-prog"><div class="hist-prog-f" style="width:${sp}%"></div></div>
+      ${res.length ? `<div class="tags">${res.map(r=>`<span class="tag tag-g">${r}</span>`).join('')}</div>` : ''}
+      ${rem.length ? `<div class="tags" style="margin-top:5px">${rem.slice(0,4).map(r=>`<span class="tag tag-r">${r}</span>`).join('')}${rem.length>4?`<span class="tag tag-r">+${rem.length-4}</span>`:''}</div>` : ''}
+    </div>`;
+  });
+  c.innerHTML = html;
+}
 
-    <div class="notice notice-plain">Terlash, titroq, bosh og'rishi — shifo jarayoni boshlanganidan darak.</div>
+function buildOffline() {
+  S.date = ''; S.time = '';
+  const confirm = $('offline-confirm');
+  if (confirm) confirm.style.display = 'none';
+  const grid = $('date-grid'); if (!grid) return;
+  grid.innerHTML = '';
+  const WD = ['Yak','Dush','Sesh','Chor','Pay','Jum','Shan'];
+  const d = new Date(); d.setDate(d.getDate() + 1);
+  let n = 0;
+  while (n < 7) {
+    if (d.getDay() !== 5) {
+      const iso = d.toISOString().slice(0,10);
+      const btn = document.createElement('div');
+      btn.className = 'pick';
+      btn.innerHTML = `<span class="pk">${d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'})}</span><span class="ps">${WD[d.getDay()]}</span>`;
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#date-grid .pick').forEach(b => b.classList.remove('sel'));
+        btn.classList.add('sel');
+        S.date = iso; updOffline();
+      });
+      grid.appendChild(btn); n++;
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  document.querySelectorAll('.time-pick').forEach(btn => {
+    const clone = btn.cloneNode(true);
+    btn.parentNode.replaceChild(clone, btn);
+    clone.addEventListener('click', () => {
+      document.querySelectorAll('.time-pick').forEach(b => b.classList.remove('sel'));
+      clone.classList.add('sel');
+      S.time = clone.dataset.time; updOffline();
+    });
+  });
+}
 
-    <div class="audio-wrap">
-      <button class="audio-btn" id="audio-btn">
-        <svg id="ico-play" width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <path d="M6 4L16 10L6 16V4Z" fill="white"/>
-        </svg>
-        <svg id="ico-pause" width="20" height="20" viewBox="0 0 20 20" fill="none" style="display:none">
-          <rect x="4" y="4" width="4" height="12" rx="1.5" fill="white"/>
-          <rect x="12" y="4" width="4" height="12" rx="1.5" fill="white"/>
-        </svg>
-      </button>
-      <div class="audio-info">
-        <div class="audio-name">Ruqiya audiosi</div>
-        <div class="audio-bar"><div class="audio-fill" id="audio-fill"></div></div>
-        <span class="audio-meta" id="audio-time">0:00</span>
-      </div>
-    </div>
-    <audio id="ruqiya-audio" preload="none"></audio>
-    <div id="audio-missing" class="notice notice-plain" style="display:none">
-      Audio fayl yuklanmagan. Menejerdan so'rang.
-    </div>
+function updOffline() {
+  const c = $('offline-confirm'), s = $('offline-sel');
+  if (c && s && S.date && S.time) {
+    s.textContent = `${S.date} — ${S.time}`;
+    c.style.display = 'block';
+  }
+}
 
-    <button class="btn btn-black" id="btn-after-listen" style="display:none;margin-bottom:8px">
-      Seans tugadi — alomatlarni belgilash
-    </button>
-    <button class="btn btn-outline" data-goto="s-check">11 kun tugadi — tekshirish</button>
-    <button class="btn btn-ghost" data-goto="s-history" style="margin-top:4px">Seanslar tarixi</button>
-  </div>
+function showFinal(title, body, extra = '') {
+  const t = $('final-title'), b = $('final-body'), e = $('final-extra');
+  if (t) t.textContent = title;
+  if (b) { b.textContent = body; b.style.whiteSpace = 'pre-wrap'; }
+  if (e) e.innerHTML = extra;
+  go('s-final');
+}
 
-  <!-- ════ 11 KUN ════ -->
-  <div id="s-check" class="screen">
-    <div class="ph">
-      <div class="ph-title">11 kundan so'ng</div>
-      <div class="ph-sub">Ruqiya qanday ta'sir qildi?</div>
-    </div>
-    <div class="effect-list">
-      <div class="effect-item" data-effect="yes">
-        <div class="eff-title">Ha, ta'sir bor</div>
-        <div class="eff-sub">Allohga shukr, holat yaxshilanmoqda</div>
-      </div>
-      <div class="effect-item" data-effect="continue">
-        <div class="eff-title">Davom etmoqda</div>
-        <div class="eff-sub">Ozgina o'zgarish bor, davom etaman</div>
-      </div>
-      <div class="effect-item" data-effect="no">
-        <div class="eff-title">O'zgarish sezmadim</div>
-        <div class="eff-sub">Shaxsan tashrif tavsiya etiladi</div>
-      </div>
-    </div>
-  </div>
+function showErr(id, msg) {
+  const e = $(id); if (!e) return;
+  e.textContent = msg; e.style.display = 'block';
+  setTimeout(() => { e.style.display = 'none'; }, 3500);
+}
 
-  <!-- ════ KUZATUV ════ -->
-  <div id="s-tracking" class="screen">
-    <div class="ph">
-      <div class="ph-title">Alomatlarni belgilash</div>
-      <div class="ph-sub" id="track-sub">Qaysi alomatlar yo'qoldi?</div>
-    </div>
-    <div class="stats-row" id="track-stats"></div>
-    <div class="notice notice-info">✅ Yo'qolgan yoki kamaygan alomatlarni belgilang</div>
-    <div class="sym-list" id="track-list"></div>
-    <div class="sticky">
-      <button class="btn btn-black" id="btn-track-save">Saqlash</button>
-    </div>
-  </div>
+/* ── AUDIO ── */
+function initAudio() {
+  const audio = $('ruqiya-audio');
+  const btn   = $('audio-btn');
+  const play  = $('ico-play');
+  const pause = $('ico-pause');
+  const fill  = $('audio-fill');
+  const time  = $('audio-time');
+  const miss  = $('audio-missing');
+  if (!audio || !btn) return;
+  if (!AUDIO) {
+    if (miss) miss.style.display = 'block';
+    btn.style.opacity = '.4'; btn.style.pointerEvents = 'none';
+    return;
+  }
+  audio.src = AUDIO;
+  const fmt = s => { const m=Math.floor(s/60),sec=Math.floor(s%60); return `${m}:${String(sec).padStart(2,'0')}`; };
+  audio.addEventListener('timeupdate', () => {
+    if (!audio.duration) return;
+    if (fill) fill.style.width = (audio.currentTime/audio.duration*100)+'%';
+    if (time) time.textContent = `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
+  });
+  audio.addEventListener('ended', () => {
+    if (play)  play.style.display  = '';
+    if (pause) pause.style.display = 'none';
+    if (fill)  fill.style.width    = '0%';
+    S.session++;
+    if (!S.remaining.length) S.remaining = [...S.labels];
+    const ab = $('btn-after-listen');
+    if (ab) ab.style.display = 'block';
+  });
+  btn.addEventListener('click', () => {
+    if (audio.paused) {
+      audio.play();
+      if (play)  play.style.display  = 'none';
+      if (pause) pause.style.display = '';
+    } else {
+      audio.pause();
+      if (play)  play.style.display  = '';
+      if (pause) pause.style.display = 'none';
+    }
+  });
+  const bar = document.querySelector('.audio-bar');
+  if (bar) bar.addEventListener('click', e => {
+    if (!audio.duration) return;
+    const r = bar.getBoundingClientRect();
+    audio.currentTime = (e.clientX-r.left)/r.width*audio.duration;
+  });
+}
 
-  <!-- ════ TARIX ════ -->
-  <div id="s-history" class="screen">
-    <div class="ph">
-      <div class="ph-title">Seanslar tarixi</div>
-      <div class="ph-sub">Dinamika va progress</div>
-    </div>
-    <div id="history-list"></div>
-    <div class="sticky">
-      <button class="btn btn-black" data-goto="s-ruqiya">Yangi seans</button>
-    </div>
-  </div>
+/* ════════════════════════════════
+   DOMContentLoaded
+   ════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('[TVD] DOMContentLoaded, tg:', !!tg);
 
-  <!-- ════ OFFLINE ════ -->
-  <div id="s-offline" class="screen">
-    <div class="ph">
-      <div class="ph-title">Tashrif yozish</div>
-      <div class="ph-sub">Qulay sana va vaqtni tanlang</div>
-    </div>
+  if (tg) tg.BackButton.onClick(() => { const t=BACK[cur]; if(t) go(t); });
+  $('btn-back')?.addEventListener('click', () => { const t=BACK[cur]; if(t) go(t); });
 
-    <div class="info-block" style="margin-bottom:14px">
-      <p><strong>📍 Manzil</strong><br>
-      Yangi Toshkent, Gulzor MFY<br>
-      Yangi Qo'yliq bozori, Food City ko'chasi<br>
-      <strong>🕐</strong> Jumaday tashqari: 07:00 va 20:00</p>
-    </div>
+  /* data-goto */
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-goto]');
+    if (!el) return;
+    const dest = el.dataset.goto;
+    if (needReg(dest)) return;
+    go(dest);
+  });
 
-    <span class="slabel">Sanani tanlang</span>
-    <div class="date-grid" id="date-grid" style="margin-bottom:14px"></div>
+  /* tiles */
+  document.querySelectorAll('.tile[data-goto]').forEach(t => {
+    t.addEventListener('click', () => {
+      if (needReg(t.dataset.goto)) return;
+      go(t.dataset.goto);
+    });
+  });
 
-    <span class="slabel">Vaqtni tanlang</span>
-    <div class="time-grid" style="margin-bottom:14px">
-      <div class="pick time-pick" data-time="07:00">
-        <span class="pk">07:00</span><span class="ps">Ertalab</span>
-      </div>
-      <div class="pick time-pick" data-time="20:00">
-        <span class="pk">20:00</span><span class="ps">Kechqurun</span>
-      </div>
-    </div>
+  /* ── REGISTER ── */
+  const regBtn = $('btn-reg');
+  console.log('[TVD] btn-reg found:', !!regBtn);
 
-    <div id="offline-confirm" class="notice notice-info" style="display:none">
-      ✅ Tanlandi: <span id="offline-sel"></span>
-    </div>
-    <div id="offline-err" class="ferr"></div>
+  regBtn?.addEventListener('click', () => {
+    console.log('[TVD] btn-reg clicked');
+    const name   = $('reg-name')?.value.trim();
+    const age    = $('reg-age')?.value.trim();
+    const region = $('reg-region')?.value.trim();
+    const phone  = $('reg-phone')?.value.trim();
 
-    <div class="sticky">
-      <button class="btn btn-black" id="btn-offline">Tasdiqlash</button>
-    </div>
-  </div>
+    console.log('[TVD] form values:', { name, age, region, phone });
 
-  <!-- ════ MA'LUMOTLAR ════ -->
-  <div id="s-info" class="screen">
-    <div class="ph">
-      <div class="ph-title">Ma'lumotlar</div>
-    </div>
-    <div class="info-list">
-      <div class="info-row" data-info="domla">
-        <span class="info-row-label">Sayfulloh domla haqida</span>
-        <span class="info-row-arrow">›</span>
-      </div>
-      <div class="info-row" data-info="markaz">
-        <span class="info-row-label">TIB VA DAM markazi</span>
-        <span class="info-row-arrow">›</span>
-      </div>
-      <div class="info-row" data-info="manzil">
-        <span class="info-row-label">Manzil va xarita</span>
-        <span class="info-row-arrow">›</span>
-      </div>
-    </div>
-  </div>
+    if (!name || name.length < 3)
+      return showErr('reg-err', "Ism kamida 3 ta harf bo'lsin");
+    if (!age || isNaN(+age) || +age < 5 || +age > 120)
+      return showErr('reg-err', "Yoshni to'g'ri kiriting (5-120)");
+    if (!region)
+      return showErr('reg-err', 'Viloyatni kiriting');
+    if (!phone)
+      return showErr('reg-err', 'Telefon raqamini kiriting');
 
-  <!-- ════ MA'LUMOT DETAIL ════ -->
-  <div id="s-info-detail" class="screen">
-    <div class="res-block" id="info-content" style="margin-top:16px"></div>
-    <div id="map-wrap" style="display:none;margin-top:10px">
-      <iframe id="map-frame" width="100%" height="240"
-        style="border:0;border-radius:12px" allowfullscreen loading="lazy"></iframe>
-    </div>
-    <button class="btn btn-outline" data-goto="s-info" style="margin-top:14px">← Orqaga</button>
-  </div>
+    const payload = { full_name: name, age: +age, region, phone };
+    console.log('[TVD] sending register:', payload);
 
-  <!-- ════ FINAL ════ -->
-  <div id="s-final" class="screen">
-    <div class="success-wrap">
-      <div class="success-circle">
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-          <polyline points="6,14 11,19 22,9" stroke="white" stroke-width="2.5"
-            stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-    </div>
-    <div class="res-block">
-      <div class="res-label" id="final-title"></div>
-      <div class="res-text" id="final-body"></div>
-    </div>
-    <div id="final-extra" style="margin-top:8px"></div>
-    <div class="sticky">
-      <button class="btn btn-black" data-goto="s-menu">Bosh menyu</button>
-      <button class="btn btn-ghost" id="btn-close">Yopish</button>
-    </div>
-  </div>
+    S.reg = true;
+    send('register', payload);
+    go('s-uyqu');
+  });
 
-</div>
+  /* ── SYMPTOM NEXT ── */
+  $('btn-uyqu')?.addEventListener('click', () => go('s-ongi'));
+  $('btn-ongi')?.addEventListener('click', () => go('s-xon'));
+  $('btn-xon')?.addEventListener('click',  () => go('s-complaint'));
 
-<script>
-  const RUQIYA_AUDIO_URL = "https://drive.google.com/uc?export=download&id=1ejYibKBvkurohRF5GZ99NL6j-cpPJLVj";
-  const API_BASE = "https://ruhiyat-production.up.railway.app";
-</script>
-<script src="app.js"></script>
-</body>
-</html>
+  /* ── COMPLAINT ── */
+  $('btn-complaint')?.addEventListener('click', () => {
+    const txt = $('complaint-text')?.value.trim();
+    if (!txt || txt.length < 10) return showErr('complaint-err', 'Kamida 10 ta belgi kiriting');
+    S.labels    = allLabels();
+    S.remaining = [...S.labels];
+    go('s-loading');
+
+    const payload = {
+      uyqu_symptoms:    labelsOf(UYQU, S.uyqu),
+      ongi_symptoms:    labelsOf(ONGI, S.ongi),
+      xonadon_symptoms: labelsOf(XON,  S.xon),
+      all_symptoms:     S.labels,
+      complaint:        txt,
+    };
+    send('analysis', payload);
+
+    const msgs = [
+      ['Tahlil qilinmoqda',        'Bot javob tayyorlamoqda'],
+      ['Alomatlar tekshirilmoqda',  'Biroz sabr qiling'],
+      ['Deyarli tayyor',            "Natija chatda ko'rinadi"],
+    ];
+    let mi = 0;
+    const iv = setInterval(() => {
+      mi = (mi+1)%msgs.length;
+      const t=$('load-title'), s=$('load-sub');
+      if(t) t.textContent=msgs[mi][0];
+      if(s) s.textContent=msgs[mi][1];
+    }, 3000);
+    setTimeout(() => { clearInterval(iv); go('s-result'); }, 9000);
+  });
+
+  /* ── RESULT ── */
+  $('btn-to-offline')?.addEventListener('click', () => go('s-offline'));
+  $('btn-to-ruqiya')?.addEventListener('click',  () => go('s-ruqiya'));
+
+  /* ── AFTER LISTEN ── */
+  $('btn-after-listen')?.addEventListener('click', () => go('s-tracking'));
+
+  /* ── 11 KUN ── */
+  document.querySelectorAll('.effect-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const eff = item.dataset.effect;
+      send('ruqiya_effect', { effect: eff });
+      if (eff === 'yes') {
+        showFinal("Allohga shukr!", "Ruqiya ta'sir qilmoqda — davom eting!\nAlomatlaringizni kuzatib boring.");
+      } else if (eff === 'continue') {
+        showFinal('Davom etmoqda', 'Ruqiyani davom ettiring. 11 kundan keyin qayta tekshiring.');
+      } else {
+        showFinal('Shaxsan tashrif tavsiya etiladi',
+          "Onlayn ruqiya yordam bermagan bo'lsa, TIB VA DAM markaziga tashrif buyuring.\n\n📍 Yangi Toshkent, Gulzor MFY\n🕐 Jumaday tashqari: 07:00 va 20:00",
+          `<button class="btn btn-black" onclick="go('s-offline')" style="margin-top:10px">Tashrif yozish</button>`
+        );
+      }
+    });
+  });
+
+  /* ── TRACKING ── */
+  $('btn-track-save')?.addEventListener('click', () => {
+    const rem = S.remaining.length ? S.remaining : S.labels;
+    const res  = [...S.resolved].map(i => rem[i]).filter(Boolean);
+    const newR = rem.filter((_,i) => !S.resolved.has(i));
+    const status = !newR.length || res.length > 0 ? 'better' : 'same';
+    S.remaining = newR;
+    saveSession({ session:S.session, date:new Date().toISOString(), res, rem:newR, total:S.labels.length });
+    send('symptom_tracking', { tracking_type:'online', session_num:S.session, resolved_symptoms:res, remaining_symptoms:newR, overall_status:status });
+    if (!newR.length) {
+      showFinal("Barcha alomatlar yo'qoldi!",
+        `Allohga shukr! Siz ${S.session} seans tingladi.\nAlloh taolo Sizi O'z rahmatida asrasin!`,
+        `<button class="btn btn-outline" onclick="go('s-history')" style="margin-top:10px">Tarixni ko'rish</button>`);
+    } else if (res.length) {
+      showFinal(`${S.session}-seans saqlandi`,
+        `✅ ${res.length} ta alomat yaxshilandi\n🔴 ${newR.length} ta alomat qoldi\n\nDavom eting. Alloh shifo bersin!`,
+        `<button class="btn btn-black" onclick="go('s-ruqiya')" style="margin-top:10px">Yangi seans</button>
+         <button class="btn btn-outline" onclick="go('s-history')" style="margin-top:8px">Tarixni ko'rish</button>`);
+    } else {
+      showFinal(`${S.session}-seans saqlandi`,
+        "Bu seansda o'zgarish sezilmadi. Davom eting.\n\nAlloh shifo bersin!",
+        `<button class="btn btn-black" onclick="go('s-ruqiya')" style="margin-top:10px">Yangi seans</button>`);
+    }
+  });
+
+  /* ── OFFLINE ── */
+  $('btn-offline')?.addEventListener('click', () => {
+    if (!S.date) return showErr('offline-err', 'Sanani tanlang');
+    if (!S.time) return showErr('offline-err', 'Vaqtni tanlang');
+    send('offline_visit', { visit_date: S.date, visit_time: S.time });
+    showFinal('Tashrif tasdiqlandi!',
+      `📅 ${S.date} — ⏰ ${S.time}\n📍 Yangi Toshkent, Gulzor MFY\n\nMenejer siz bilan bog'lanadi.`);
+  });
+
+  /* ── INFO ── */
+  document.querySelectorAll('.info-row[data-info]').forEach(row => {
+    row.addEventListener('click', () => {
+      const data = INFO_DATA[row.dataset.info]; if (!data) return;
+      const c = $('info-content');
+      if (c) c.innerHTML = `<div class="res-label">${data.title}</div><div class="res-text">${data.body}</div>`;
+      const mw=$('map-wrap'), mf=$('map-frame');
+      if (mw && mf) {
+        if (data.map) { mf.src=`https://maps.google.com/maps?q=${data.lat},${data.lon}&z=16&output=embed`; mw.style.display='block'; }
+        else mw.style.display='none';
+      }
+      go('s-info-detail');
+    });
+  });
+
+  /* ── CLOSE ── */
+  $('btn-close')?.addEventListener('click', () => { if(tg) tg.close(); });
+
+  /* ── START ── */
+  initAudio();
+  go('s-register'); // Всегда начинаем с регистрации
+});
