@@ -163,7 +163,7 @@
     </div>
 
     <div class="notice notice-error" id="otp-err" style="margin-top:12px"></div>
-    <div id="dev-code-hint" class="dev-hint" style="display:none"></div>
+    <div id="dev-code-hint" style="display:none;margin-top:12px;background:#fff3cd;border:1.5px solid #ffc107;border-radius:10px;padding:13px 16px;font-size:1rem;font-weight:700;text-align:center;color:#333;letter-spacing:.05em"></div>
 
     <button class="btn btn-black" id="btn-verify" style="margin-top:16px">Tasdiqlash →</button>
 
@@ -268,9 +268,12 @@ document.getElementById('btn-send-otp').addEventListener('click', async () => {
     document.getElementById('phone-display').textContent = phone;
 
     // DEV MODE: kodni ko'rsatish
+    const hint = document.getElementById('dev-code-hint');
     if (res.dev_code) {
-      const hint = document.getElementById('dev-code-hint');
-      hint.textContent = `🔧 Test kodi: ${res.dev_code}`;
+      hint.innerHTML = `<strong>Tasdiqlash kodi: ${res.dev_code}</strong>`;
+      hint.style.display = 'block';
+    } else {
+      hint.textContent = "Kod Railway loglarida ko'ring (DEV_MODE=true qo'ying)";
       hint.style.display = 'block';
     }
 
@@ -338,10 +341,10 @@ async function resendOTP() {
   if (!currentPhone) return;
   try {
     const res = await apiCall('/api/otp/send', { phone: currentPhone });
+    const hint2 = document.getElementById('dev-code-hint');
     if (res?.dev_code) {
-      const hint = document.getElementById('dev-code-hint');
-      hint.textContent = `🔧 Test kodi: ${res.dev_code}`;
-      hint.style.display = 'block';
+      hint2.innerHTML = `<strong>Yangi kod: ${res.dev_code}</strong>`;
+      hint2.style.display = 'block';
     }
     startTimer();
     // OTP input ларини тозалаш
