@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TIB VA DAM — Ro'yxatdan o'tish</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #0a0a0a; --white: #fff;
+      --g50: #f7f7f7; --g100: #efefef; --g200: #e0e0e0;
+      --g400: #a0a0a0; --g600: #666;
+      --green: #00b37a; --green-bg: #e6f8f3;
+      --red: #e03030; --red-bg: #fef0f0;
+      --amber: #d97706;
+      --f: 'Manrope', -apple-system, sans-serif;
+    }
+    html, body { font-family: var(--f); background: var(--white); color: var(--black); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 420px; margin: 0 auto; padding: 0 20px 80px; }
+
+    /* Header */
+    .header { padding: 24px 20px 16px; border-bottom: 1px solid var(--g200); margin: 0 -20px 24px; }
+    .logo { font-size: 1.1rem; font-weight: 800; letter-spacing: -.02em; }
+    .logo span { background: linear-gradient(135deg,#b8860b,#d4a017); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .tagline { font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--g400); font-weight: 600; margin-top: 2px; }
+
+    /* Steps */
+    .steps { display: flex; gap: 6px; margin-bottom: 28px; }
+    .step { flex: 1; height: 3px; background: var(--g100); border-radius: 2px; transition: background .3s; }
+    .step.done   { background: var(--green); }
+    .step.active { background: var(--black); }
+
+    /* Title */
+    .title { font-size: 1.5rem; font-weight: 800; letter-spacing: -.03em; margin-bottom: 6px; }
+    .subtitle { font-size: .86rem; color: var(--g600); margin-bottom: 24px; line-height: 1.5; }
+
+    /* Screens */
+    .screen { display: none; animation: up .2s ease both; }
+    .screen.active { display: block; }
+    @keyframes up { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+    /* Field */
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--g600); margin-bottom: 7px; }
+    .field input {
+      width: 100% !important; display: block !important;
+      background: var(--g50) !important; border: 1.5px solid var(--g200) !important;
+      border-radius: 12px !important; padding: 14px 16px !important;
+      font-family: var(--f) !important; font-size: 16px !important; font-weight: 500 !important;
+      color: #0a0a0a !important; -webkit-text-fill-color: #0a0a0a !important;
+      outline: none !important; -webkit-appearance: none !important; appearance: none !important;
+      opacity: 1 !important; transition: border-color .15s, background .15s;
+    }
+    .field input:focus { border-color: var(--black) !important; background: var(--white) !important; }
+    .field input::placeholder { color: #b8b8b8 !important; -webkit-text-fill-color: #b8b8b8 !important; font-weight: 400 !important; opacity: 1 !important; }
+
+    /* OTP input */
+    .otp-wrap { display: flex; gap: 8px; }
+    .otp-digit {
+      flex: 1; height: 56px; text-align: center !important;
+      font-size: 1.4rem !important; font-weight: 700 !important;
+      border-radius: 12px !important; padding: 0 !important;
+      letter-spacing: 0 !important;
+    }
+    .otp-digit:focus { border-color: var(--black) !important; background: var(--white) !important; }
+
+    /* Button */
+    .btn {
+      display: block; width: 100%; padding: 16px;
+      border: none; border-radius: 12px;
+      font-family: var(--f); font-size: .95rem; font-weight: 700;
+      cursor: pointer; text-align: center; transition: opacity .15s, transform .1s;
+      -webkit-tap-highlight-color: transparent; margin-top: 8px;
+    }
+    .btn:active { transform: scale(.97); opacity: .85; }
+    .btn:disabled { opacity: .4; pointer-events: none; }
+    .btn-black  { background: var(--black); color: var(--white); }
+    .btn-outline{ background: var(--white); color: var(--black); border: 1.5px solid var(--g200); }
+
+    /* Notice */
+    .notice { border-radius: 10px; padding: 12px 14px; font-size: .84rem; line-height: 1.55; font-weight: 500; margin-bottom: 14px; }
+    .notice-info  { background: var(--green-bg); color: #006b50; border: 1px solid #a0dcc8; }
+    .notice-error { background: var(--red-bg); color: var(--red); border: 1px solid #f0c0c0; display: none; }
+    .notice-warn  { background: #fff8ec; color: #9a5800; border: 1px solid #fad890; }
+
+    /* Timer */
+    .timer { text-align: center; font-size: .82rem; color: var(--g400); font-weight: 500; margin-top: 12px; }
+    .timer a { color: var(--black); font-weight: 600; cursor: pointer; text-decoration: none; }
+    .timer a.disabled { color: var(--g400); pointer-events: none; }
+
+    /* Success */
+    .success-circle { width: 64px; height: 64px; background: var(--black); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+    .success-title { font-size: 1.4rem; font-weight: 800; text-align: center; margin-bottom: 8px; }
+    .success-sub   { font-size: .86rem; color: var(--g600); text-align: center; margin-bottom: 24px; }
+
+    /* Phone display */
+    .phone-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--g50); border: 1.5px solid var(--g200);
+      border-radius: 10px; padding: 10px 14px;
+      font-size: .88rem; font-weight: 600; color: var(--black);
+      margin-bottom: 20px; width: 100%;
+    }
+    .phone-change { margin-left: auto; font-size: .78rem; color: var(--g400); cursor: pointer; font-weight: 500; }
+    .phone-change:hover { color: var(--black); }
+
+    .dev-hint { font-size: .72rem; color: var(--g400); text-align: center; margin-top: 8px; background: var(--g50); padding: 8px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="logo">TIB <span>VA DAM</span></div>
+    <div class="tagline">Ruhiy Salomatlikni Aniqlash Platformasi</div>
+  </div>
+
+  <!-- STEPS -->
+  <div class="steps">
+    <div class="step active" id="step-1"></div>
+    <div class="step" id="step-2"></div>
+    <div class="step" id="step-3"></div>
+  </div>
+
+  <!-- SCREEN 1: TELEFON -->
+  <div class="screen active" id="sc-phone">
+    <div class="title">Telefon raqam</div>
+    <div class="subtitle">Tasdiqlash kodi yuboriladi</div>
+
+    <div class="field">
+      <label>Telefon raqam</label>
+      <input id="inp-phone" type="tel" inputmode="tel"
+        placeholder="+998 90 123 45 67" autocomplete="tel">
+    </div>
+
+    <div class="notice notice-info">
+      📱 Kod Telegram ilovasidagi <strong>@VerificationCodes</strong> botga keladi
+    </div>
+    <div class="notice notice-error" id="phone-err"></div>
+
+    <button class="btn btn-black" id="btn-send-otp">Kod yuborish →</button>
+  </div>
+
+  <!-- SCREEN 2: OTP -->
+  <div class="screen" id="sc-otp">
+    <div class="title">Kodni kiriting</div>
+    <div class="subtitle">6 xonali tasdiqlash kodi</div>
+
+    <div class="phone-badge" id="phone-badge">
+      <span>📱</span>
+      <span id="phone-display"></span>
+      <span class="phone-change" onclick="goScreen('sc-phone')">O'zgartirish</span>
+    </div>
+
+    <div class="otp-wrap">
+      <input class="field input otp-digit" id="otp-0" type="number" inputmode="numeric" maxlength="1" min="0" max="9">
+      <input class="field input otp-digit" id="otp-1" type="number" inputmode="numeric" maxlength="1" min="0" max="9">
+      <input class="field input otp-digit" id="otp-2" type="number" inputmode="numeric" maxlength="1" min="0" max="9">
+      <input class="field input otp-digit" id="otp-3" type="number" inputmode="numeric" maxlength="1" min="0" max="9">
+      <input class="field input otp-digit" id="otp-4" type="number" inputmode="numeric" maxlength="1" min="0" max="9">
+      <input class="field input otp-digit" id="otp-5" type="number" inputmode="numeric" maxlength="1" min="0" max="9">
+    </div>
+
+    <div class="notice notice-error" id="otp-err" style="margin-top:12px"></div>
+    <div id="dev-code-hint" class="dev-hint" style="display:none"></div>
+
+    <button class="btn btn-black" id="btn-verify" style="margin-top:16px">Tasdiqlash →</button>
+
+    <div class="timer">
+      <span id="timer-text">Qayta yuborish: <strong id="timer-count">4:59</strong></span>
+      <a id="btn-resend" class="disabled" onclick="resendOTP()">Qayta yuborish</a>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: MA'LUMOTLAR -->
+  <div class="screen" id="sc-info">
+    <div class="title">Ma'lumotlarni kiriting</div>
+    <div class="subtitle">Bir marta to'ldiriladi</div>
+
+    <div class="field">
+      <label>Ism va familiya</label>
+      <input id="inp-name" type="text" placeholder="Alisher Navoiy" autocomplete="name">
+    </div>
+    <div class="field">
+      <label>Yosh</label>
+      <input id="inp-age" type="number" placeholder="28" min="5" max="120">
+    </div>
+    <div class="field">
+      <label>Viloyat / Shahar</label>
+      <input id="inp-region" type="text" placeholder="Toshkent">
+    </div>
+
+    <div class="notice notice-error" id="info-err" style="margin-top:0"></div>
+    <button class="btn btn-black" id="btn-register">Ro'yxatdan o'tish →</button>
+  </div>
+
+  <!-- SCREEN 4: SUCCESS -->
+  <div class="screen" id="sc-success">
+    <div style="padding-top:32px">
+      <div class="success-circle">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <polyline points="5,14 11,20 23,8" stroke="white" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="success-title">Xush kelibsiz!</div>
+      <div class="success-sub" id="success-name"></div>
+      <div class="notice notice-info" style="text-align:center">
+        ✅ Ma'lumotlaringiz muvaffaqiyatli saqlandi
+      </div>
+      <button class="btn btn-black" id="btn-go-app">Davom etish →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "https://ruhiyat-production.up.railway.app";
+let currentPhone = '';
+let timerInterval = null;
+
+// ── SCREENS ──────────────────────────────────────────────────────────────
+function goScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id)?.classList.add('active');
+  const steps = { 'sc-phone':0, 'sc-otp':1, 'sc-info':2, 'sc-success':3 };
+  const idx = steps[id] || 0;
+  ['step-1','step-2','step-3'].forEach((s, i) => {
+    const el = document.getElementById(s);
+    el.className = 'step' + (i < idx ? ' done' : i === idx ? ' active' : '');
+  });
+}
+
+function showErr(id, msg) {
+  const e = document.getElementById(id);
+  if (!e) return;
+  e.textContent = msg; e.style.display = 'block';
+  setTimeout(() => { e.style.display = 'none'; }, 4000);
+}
+
+// ── API CALL ──────────────────────────────────────────────────────────────
+async function apiCall(path, body) {
+  const res = await fetch(API + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+// ── STEP 1: TELEFON ───────────────────────────────────────────────────────
+document.getElementById('btn-send-otp').addEventListener('click', async () => {
+  const phone = document.getElementById('inp-phone').value.trim();
+  if (!phone || phone.length < 9) return showErr('phone-err', "Telefon raqamni to'g'ri kiriting");
+
+  const btn = document.getElementById('btn-send-otp');
+  btn.disabled = true; btn.textContent = 'Yuborilmoqda...';
+
+  try {
+    const res = await apiCall('/api/send-otp', { phone });
+    if (!res?.ok) {
+      showErr('phone-err', res?.detail || 'Xatolik yuz berdi');
+      btn.disabled = false; btn.textContent = 'Kod yuborish →';
+      return;
+    }
+
+    currentPhone = phone;
+    document.getElementById('phone-display').textContent = phone;
+
+    // DEV MODE: kodni ko'rsatish
+    if (res.dev_code) {
+      const hint = document.getElementById('dev-code-hint');
+      hint.textContent = `🔧 Test kodi: ${res.dev_code}`;
+      hint.style.display = 'block';
+    }
+
+    goScreen('sc-otp');
+    startTimer();
+    document.getElementById('otp-0').focus();
+  } catch(e) {
+    showErr('phone-err', 'Server bilan aloqa yo\'q');
+  }
+  btn.disabled = false; btn.textContent = 'Kod yuborish →';
+});
+
+// ── OTP INPUT ─────────────────────────────────────────────────────────────
+for (let i = 0; i < 6; i++) {
+  const inp = document.getElementById(`otp-${i}`);
+  inp.addEventListener('input', e => {
+    const val = e.target.value.replace(/\D/g,'');
+    e.target.value = val.slice(-1);
+    if (val && i < 5) document.getElementById(`otp-${i+1}`).focus();
+    if (getOTPCode().length === 6) document.getElementById('btn-verify').click();
+  });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && !e.target.value && i > 0)
+      document.getElementById(`otp-${i-1}`).focus();
+  });
+  inp.addEventListener('paste', e => {
+    e.preventDefault();
+    const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'');
+    [...paste.slice(0,6)].forEach((d, j) => {
+      const el = document.getElementById(`otp-${j}`);
+      if (el) el.value = d;
+    });
+    const last = Math.min(paste.length, 5);
+    document.getElementById(`otp-${last}`)?.focus();
+    if (paste.length >= 6) setTimeout(() => document.getElementById('btn-verify').click(), 100);
+  });
+}
+
+function getOTPCode() {
+  return [...Array(6)].map((_,i) => document.getElementById(`otp-${i}`)?.value || '').join('');
+}
+
+// ── TIMER ─────────────────────────────────────────────────────────────────
+function startTimer() {
+  let secs = 299;
+  const resend = document.getElementById('btn-resend');
+  const timerText = document.getElementById('timer-text');
+  const timerCount = document.getElementById('timer-count');
+  resend.className = 'disabled';
+  timerText.style.display = 'inline';
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    secs--;
+    const m = Math.floor(secs/60), s = secs%60;
+    timerCount.textContent = `${m}:${String(s).padStart(2,'0')}`;
+    if (secs <= 0) {
+      clearInterval(timerInterval);
+      timerText.style.display = 'none';
+      resend.className = '';
+    }
+  }, 1000);
+}
+
+async function resendOTP() {
+  if (!currentPhone) return;
+  try {
+    const res = await apiCall('/api/send-otp', { phone: currentPhone });
+    if (res?.dev_code) {
+      const hint = document.getElementById('dev-code-hint');
+      hint.textContent = `🔧 Test kodi: ${res.dev_code}`;
+      hint.style.display = 'block';
+    }
+    startTimer();
+    // OTP input ларини тозалаш
+    for (let i = 0; i < 6; i++) document.getElementById(`otp-${i}`).value = '';
+    document.getElementById('otp-0').focus();
+  } catch(e) {
+    showErr('otp-err', 'Qayta yuborishda xatolik');
+  }
+}
+
+// ── STEP 2: VERIFY ────────────────────────────────────────────────────────
+document.getElementById('btn-verify').addEventListener('click', async () => {
+  const code = getOTPCode();
+  if (code.length < 6) return showErr('otp-err', "6 xonali kodni to'liq kiriting");
+
+  const btn = document.getElementById('btn-verify');
+  btn.disabled = true; btn.textContent = 'Tekshirilmoqda...';
+
+  try {
+    const res = await apiCall('/api/verify-otp', { phone: currentPhone, code });
+    if (!res?.ok) {
+      showErr('otp-err', res?.detail || 'Noto\'g\'ri kod');
+      btn.disabled = false; btn.textContent = 'Tasdiqlash →';
+      return;
+    }
+
+    clearInterval(timerInterval);
+
+    if (res.registered && res.user) {
+      // Allaqachon ro'yxatdan o'tgan
+      showSuccess(res.user.full_name);
+    } else {
+      // Yangi foydalanuvchi
+      goScreen('sc-info');
+    }
+  } catch(e) {
+    showErr('otp-err', 'Server bilan aloqa yo\'q');
+  }
+  btn.disabled = false; btn.textContent = 'Tasdiqlash →';
+});
+
+// ── STEP 3: REGISTER ──────────────────────────────────────────────────────
+document.getElementById('btn-register').addEventListener('click', async () => {
+  const name   = document.getElementById('inp-name').value.trim();
+  const age    = document.getElementById('inp-age').value.trim();
+  const region = document.getElementById('inp-region').value.trim();
+
+  if (!name || name.length < 3) return showErr('info-err', "Ism kamida 3 ta harf bo'lsin");
+  if (!age || isNaN(+age) || +age < 5 || +age > 120) return showErr('info-err', "Yoshni to'g'ri kiriting");
+  if (!region) return showErr('info-err', 'Viloyatni kiriting');
+
+  const btn = document.getElementById('btn-register');
+  btn.disabled = true; btn.textContent = 'Saqlanmoqda...';
+
+  try {
+    const res = await apiCall('/api/register', {
+      phone:     currentPhone,
+      full_name: name,
+      age:       +age,
+      region,
+    });
+
+    if (!res?.ok) {
+      showErr('info-err', res?.detail || 'Ro\'yxatdan o\'tishda xatolik');
+      btn.disabled = false; btn.textContent = "Ro'yxatdan o'tish →";
+      return;
+    }
+
+    showSuccess(name);
+  } catch(e) {
+    showErr('info-err', 'Server bilan aloqa yo\'q');
+  }
+  btn.disabled = false; btn.textContent = "Ro'yxatdan o'tish →";
+});
+
+// ── SUCCESS ───────────────────────────────────────────────────────────────
+function showSuccess(name) {
+  const sub = document.getElementById('success-name');
+  if (sub) sub.textContent = `${name}, muvaffaqiyatli ro'yxatdan o'tdingiz!`;
+  // Phone ni localStorage ga saqlash
+  try { localStorage.setItem('tvd_phone', currentPhone); localStorage.setItem('tvd_name', name); } catch {}
+  goScreen('sc-success');
+}
+
+// ── GO APP ────────────────────────────────────────────────────────────────
+document.getElementById('btn-go-app').addEventListener('click', () => {
+  window.location.href = 'index.html';
+});
+</script>
+</body>
+</html>
