@@ -554,9 +554,21 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ── START ── */
   initAudio();
 
-  // Начинаем с регистрации
+  // localStorage dan foydalanuvchi tekshirish
   setTimeout(() => {
-    console.log('[TVD] Starting, going to s-register');
-    go('s-register');
+    try {
+      const saved = localStorage.getItem('tvd_user');
+      if (saved) {
+        const u = JSON.parse(saved);
+        if (u && u.full_name) {
+          S.reg = true;
+          console.log('[TVD] User from localStorage:', u.full_name);
+          go('s-menu');
+          return;
+        }
+      }
+    } catch {}
+    // Ro'yxatdan o'tish sahifasiga yo'naltirish
+    window.location.href = 'register.html';
   }, 100);
 });
