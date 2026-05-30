@@ -10,6 +10,41 @@ function send(action, payload = {}) {
 }
 
 const AUDIO = (typeof RUQIYA_AUDIO_URL !== 'undefined') ? RUQIYA_AUDIO_URL : '';
+const BASE  = (typeof API_BASE !== 'undefined') ? API_BASE : '';
+
+// Telegram user ID dan tg_id olish
+function getTgId() {
+  try {
+    const raw = tg?.initDataUnsafe?.user?.id;
+    if (raw) return raw;
+    const match = (tg?.initData || '').match(/user=([^&]+)/);
+    if (match) return JSON.parse(decodeURIComponent(match[1])).id || null;
+  } catch {}
+  return null;
+}
+
+// API call
+async function api(path, method = 'GET', body = null) {
+  if (!BASE) return null;
+  const tgId = getTgId();
+  try {
+    const res = await fetch(BASE + path, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Tg-Id':      String(tgId || ''),
+        'X-Init-Data':  tg?.initData || '',
+      },
+      body: body ? JSON.stringify(body) : null,
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) { console.error('API', res.status, path); return null; }
+    return await res.json();
+  } catch (e) {
+    console.error('apiFetch', path, e.message);
+    return null;
+  }
+}
 
 /* ── DATA ── */
 const UYQU = [
@@ -414,17 +449,37 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* REGISTER */
-  $('btn-reg')?.addEventListener('click', () => {
+  $('btn-reg')?.addEventListener('click', async () => {
     const name   = $('reg-name')?.value.trim();
     const age    = $('reg-age')?.value.trim();
     const region = $('reg-region')?.value.trim();
     const phone  = $('reg-phone')?.value.trim();
-    if (!name || name.length < 3)               return showErr('reg-err', 'Ism kamida 3 ta harf bo\'lsin');
-    if (!age || isNaN(age) || +age < 5 || +age > 120) return showErr('reg-err', 'Yoshni to\'g\'ri kiriting');
+    if (!name || name.length < 3)               return showErr('reg-err', "Ism kamida 3 ta harf bo'lsin");
+    if (!age || isNaN(age) || +age < 5 || +age > 120) return showErr('reg-err', "Yoshni to'g'ri kiriting");
     if (!region)                                 return showErr('reg-err', 'Viloyatni kiriting');
     if (!phone)                                  return showErr('reg-err', 'Telefon raqamini kiriting');
+
+    const btn = $('btn-reg');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saqlanmoqda...'; }
+
+    const payload = {
+      full_name: name, age: +age, region, phone,
+      tg_id:    getTgId(),
+      username: tg?.initDataUnsafe?.user?.username || '',
+    };
+
+    // API orqali DB ga saqlash
+    const res = await api('/api/register', 'POST', payload);
+    if (res?.ok) {
+      console.log("✅ DB ga saqlandi:", res.user?.full_name);
+    } else {
+      console.warn("⚠️ API xatolik — faqat bot orqali saqlanadi");
+    }
+
+    if (btn) { btn.disabled = false; btn.textContent = 'Davom etish →'; }
+
     S.reg = true;
-    send('register', { full_name: name, age: +age, region, phone });
+    send('register', payload); // Botga ham yuborish
     go('s-uyqu');
   });
 
@@ -547,6 +602,46 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btn-close')?.addEventListener('click', () => { if (tg) tg.close(); });
 
   /* START */
-  go('s-menu');
   initAudio();
+  loadOnStart();
 });
+
+/* ── ЗАГРУЗКА ПРИ СТАРТЕ ── */
+async function loadOnStart() {
+  const tgId = getTgId();
+
+  // Если нет API — просто открываем меню
+  if (!BASE || !tgId) { go('s-menu'); return; }
+
+  // Показываем loading пока проверяем
+  go('s-loading');
+  const lt = $('load-title'), ls = $('load-sub');
+  if (lt) lt.textContent = 'Yuklanmoqda';
+  if (ls) ls.textContent = 'Biroz sabr qiling';
+
+  try {
+    // Проверяем: зарегистрирован ли пользователь?
+    const res = await api(`/api/user/${tgId}`);
+
+    if (res?.ok && res.user) {
+      // Уже зарегистрирован — прямо в меню
+      S.reg = true;
+      console.log('✅ Foydalanuvchi topildi:', res.user.full_name);
+
+      // Загружаем последний анализ если есть
+      const aRes = await api(`/api/analysis/${tgId}`);
+      if (aRes?.ok && aRes.analysis) {
+        S.labels    = aRes.analysis.symptoms || [];
+        S.remaining = [...S.labels];
+      }
+
+      go('s-menu');
+    } else {
+      // Не зарегистрирован — показываем форму
+      go('s-register');
+    }
+  } catch (e) {
+    console.error('loadOnStart:', e);
+    go('s-menu');
+  }
+}
