@@ -257,7 +257,7 @@ document.getElementById('btn-send-otp').addEventListener('click', async () => {
   btn.disabled = true; btn.textContent = 'Yuborilmoqda...';
 
   try {
-    const res = await apiCall('/api/send-otp', { phone });
+    const res = await apiCall('/api/otp/send', { phone });
     if (!res?.ok) {
       showErr('phone-err', res?.detail || 'Xatolik yuz berdi');
       btn.disabled = false; btn.textContent = 'Kod yuborish →';
@@ -337,7 +337,7 @@ function startTimer() {
 async function resendOTP() {
   if (!currentPhone) return;
   try {
-    const res = await apiCall('/api/send-otp', { phone: currentPhone });
+    const res = await apiCall('/api/otp/send', { phone: currentPhone });
     if (res?.dev_code) {
       const hint = document.getElementById('dev-code-hint');
       hint.textContent = `🔧 Test kodi: ${res.dev_code}`;
@@ -361,7 +361,7 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
   btn.disabled = true; btn.textContent = 'Tekshirilmoqda...';
 
   try {
-    const res = await apiCall('/api/verify-otp', { phone: currentPhone, code });
+    const res = await apiCall('/api/otp/verify', { phone: currentPhone, code });
     if (!res?.ok) {
       showErr('otp-err', res?.detail || 'Noto\'g\'ri kod');
       btn.disabled = false; btn.textContent = 'Tasdiqlash →';
@@ -397,7 +397,7 @@ document.getElementById('btn-register').addEventListener('click', async () => {
   btn.disabled = true; btn.textContent = 'Saqlanmoqda...';
 
   try {
-    const res = await apiCall('/api/register', {
+    const res = await apiCall('/api/otp/register', {
       phone:     currentPhone,
       full_name: name,
       age:       +age,
