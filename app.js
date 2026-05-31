@@ -1,4 +1,4 @@
-/* TIB VA DAM Mini App */
+/* TIB VA DAM — Mini App */
 
 const tg = window.Telegram?.WebApp || null;
 if (tg) { tg.ready(); tg.expand(); tg.enableClosingConfirmation(); }
@@ -6,29 +6,7 @@ if (tg) { tg.ready(); tg.expand(); tg.enableClosingConfirmation(); }
 const API   = 'https://ruhiyat-production.up.railway.app';
 const AUDIO = (typeof RUQIYA_AUDIO_URL !== 'undefined') ? RUQIYA_AUDIO_URL : '';
 
-function send(action, payload = {}) {
-  const d = JSON.stringify({ action, ...payload });
-  if (tg && tg.sendData) tg.sendData(d);
-  else console.log('[bot]', action, payload);
-}
-
-async function apiGet(path) {
-  try {
-    const r = await fetch(API + path, { signal: AbortSignal.timeout(10000) });
-    return r.ok ? r.json() : null;
-  } catch(e) { console.warn('apiGet', e.message); return null; }
-}
-async function apiPost(path, body) {
-  try {
-    const r = await fetch(API + path, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(body), signal: AbortSignal.timeout(15000),
-    });
-    return r.ok ? r.json() : null;
-  } catch(e) { console.warn('apiPost', e.message); return null; }
-}
-
-/* ── DATA ── */
+/* ── SYMPTOM DATA ─────────────────────────────────────────────────────── */
 const UYQU = [
   ["Uyquga ketishi bilan cho'chib uyg'onish","u01"],
   ["Uyquda yurak havliqib uyg'onish","u02"],
@@ -79,39 +57,44 @@ const XON = [
   ["Tezroq chiqib ketgisi kelishi","x09"],
   ["Ko'chada yaxshi, uyda yomon","x10"],
 ];
-const INFO_DATA = {
-  domla: {
-    title: 'Sayfulloh domla haqida',
-    body: "O'zbekiston Xalq Tabobati Assotsiatsiyasining rasmiy a'zosi.\n\nOliy ma'lumotli mutaxassis — Misr, Saudiya Arabistoni, Turkiya, Moskva va Sankt-Peterburgda tahsil olgan.\n\n\"Ruhiy bezovtalik muolajasi\" sohasida ixtisoslashgan tajribali Roqiy.",
-    map: false,
-  },
-  markaz: {
-    title: 'TIB VA DAM markazi',
-    body: "Yangi Toshkent, Gulzor MFY\nYangi Qo'yliq bozori, Food City ko'chasi\n\nQabul: Jumaday tashqari har kuni\n- Ertalab: 07:00\n- Kechqurun: 20:00",
-    map: false,
-  },
-  manzil: {
-    title: 'Manzil',
-    body: "Yangi Toshkent, Gulzor MFY\nYangi Qo'yliq bozori, Food City ko'chasi\n\nJumaday tashqari har kuni: 07:00 va 20:00",
-    map: true, lat: 41.3264, lon: 69.3728,
-  },
+
+const FEELINGS = [
+  {id:'yengil',  label:'😌 Yengil his qildim'},
+  {id:'titroq',  label:'😰 Titroq yoki qo\'rquv'},
+  {id:'terlash', label:'😓 Terlash'},
+  {id:'uyqu',    label:'😴 Uyqum keldi'},
+  {id:'bosh',    label:'🤕 Bosh og\'ridi'},
+  {id:'normal',  label:'😐 O\'zgarish sezilmadi'},
+  {id:'yig\'lash',label:'😢 Ko\'z yoshi keldi'},
+  {id:'tinchlik',label:'🕊️ Tinchlik his qildim'},
+];
+
+/* ── STATE ─────────────────────────────────────────────────────────────── */
+const S = {
+  phone: '',
+  user: null,
+  analysis: null,       // aktiv tahlil DB dan
+  ruqiyaLogs: [],       // tinglash loglari
+  progress: null,       // {max_day, total_listens}
+
+  // Tahlil qilish uchun
+  uyqu: new Set(), ongi: new Set(), xon: new Set(),
+  rag_answer: '',
+
+  // Ruqiya session uchun
+  currentDayNum: 1,
+  currentListenNum: 1,
+  selectedFeelings: new Set(),
+  removedSymptoms: new Set(),
+  addedSymptoms: new Set(),
+  activeSymptoms: [],   // joriy aktiv simptomlar
+
+  // Oflayn
+  date: '', time: '',
 };
 
-/* ── STATE ── */
-const S = {
-  reg: false,
-  phone: '',
-  uyqu: new Set(), ongi: new Set(), xon: new Set(),
-  labels: [], remaining: [],
-  session: 0, resolved: new Set(),
-  date: '', time: '',
-  lastAnalysis: null,
-  sessions: [],
-  sessionNum: 0,
-  currentFeelings: new Set(),
-  sessionSymbols: new Set(),
-  rag_answer: '',
-};
+/* ── HELPERS ────────────────────────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
 
 function allLabels() {
   const o = [];
@@ -122,85 +105,173 @@ function allLabels() {
 }
 function labelsOf(data, sel) { return data.filter(([,k]) => sel.has(k)).map(([l]) => l); }
 
-function getSessions() {
-  try { return JSON.parse(localStorage.getItem('tvd_s') || '[]'); } catch { return []; }
-}
-function saveSession(d) {
-  const a = getSessions(); a.push(d);
-  try { localStorage.setItem('tvd_s', JSON.stringify(a)); } catch {}
+function showErr(id, msg) {
+  const e = $(id); if (!e) return;
+  e.textContent = msg; e.style.display = 'block';
+  setTimeout(() => { e.style.display = 'none'; }, 4000);
 }
 
-/* ── NAV ── */
-const PROGRESS = {
-  's-menu':0,'s-uyqu':22,'s-ongi':40,'s-xon':58,
-  's-complaint':72,'s-loading':77,'s-result':82,'s-ruqiya':84,
-  's-check':88,'s-tracking':93,'s-history':60,
-  's-offline':90,'s-info':5,'s-info-detail':5,'s-final':100,
-  's-dashboard':5,'s-ruqiya-session':84,'s-calendar':60,
-};
+async function apiGet(path) {
+  try {
+    const r = await fetch(API + path, { signal: AbortSignal.timeout(10000) });
+    return r.ok ? r.json() : null;
+  } catch(e) { console.warn('apiGet', path, e.message); return null; }
+}
+async function apiPost(path, body) {
+  try {
+    const r = await fetch(API + path, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body), signal: AbortSignal.timeout(30000),
+    });
+    return r.ok ? r.json() : null;
+  } catch(e) { console.warn('apiPost', path, e.message); return null; }
+}
+
+/* ── NAV ────────────────────────────────────────────────────────────────── */
 const BACK = {
-  's-uyqu':'s-menu','s-ongi':'s-uyqu','s-xon':'s-ongi',
-  's-complaint':'s-xon','s-result':'s-menu','s-ruqiya':'s-menu',
-  's-check':'s-ruqiya','s-tracking':'s-ruqiya','s-history':'s-ruqiya',
-  's-offline':'s-menu','s-info':'s-menu','s-info-detail':'s-info','s-final':'s-menu',
-  's-dashboard':'s-menu','s-ruqiya-session':'s-dashboard','s-calendar':'s-dashboard',
+  's-holat':   's-menu',
+  's-uyqu':    's-holat',
+  's-ongi':    's-uyqu',
+  's-xon':     's-ongi',
+  's-complaint':'s-xon',
+  's-loading': 's-complaint',
+  's-result':  's-menu',
+  's-ruqiya':  's-menu',
+  's-listen':  's-ruqiya',
+  's-after-listen': 's-listen',
+  's-sym-update':   's-after-listen',
+  's-offline': 's-menu',
+  's-info':    's-menu',
+  's-info-detail': 's-info',
+  's-final':   's-menu',
+};
+const PROGRESS = {
+  's-menu':0, 's-holat':5, 's-uyqu':20, 's-ongi':38, 's-xon':56,
+  's-complaint':72, 's-loading':78, 's-result':85,
+  's-ruqiya':10, 's-listen':50, 's-after-listen':70, 's-sym-update':85,
+  's-offline':30, 's-info':5, 's-info-detail':5, 's-final':100,
 };
 let cur = '';
-const $ = id => document.getElementById(id);
 
 function go(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = $(id); if (!el) { console.error('Screen topilmadi:', id); return; }
-  el.classList.add('active');
-  cur = id;
-  window.scrollTo({ top: 0 });
+  el.classList.add('active'); cur = id;
+  window.scrollTo({top:0});
   const pct = PROGRESS[id] || 0;
   const pb = $('pbar'); if (pb) pb.style.width = pct + '%';
   const bb = $('back-bar'); if (bb) bb.style.display = id === 's-menu' ? 'none' : 'block';
   if (tg) id === 's-menu' ? tg.BackButton.hide() : tg.BackButton.show();
 
+  if (id === 's-holat')    buildHolat();
   if (id === 's-uyqu')     buildList('uyqu-list', UYQU, S.uyqu, 'uyqu-pill');
   if (id === 's-ongi')     buildList('ongi-list', ONGI, S.ongi, 'ongi-pill');
   if (id === 's-xon')      buildList('xon-list',  XON,  S.xon,  'xon-pill');
   if (id === 's-complaint') buildComplaint();
-  if (id === 's-result')   buildResult();
-  if (id === 's-tracking') buildTracking();
-  if (id === 's-history')  buildHistory();
+  if (id === 's-ruqiya')   buildRuqiyaMenu();
+  if (id === 's-after-listen') buildAfterListen();
+  if (id === 's-sym-update') buildSymUpdate();
   if (id === 's-offline')  buildOffline();
-  if (id === 's-dashboard') buildDashboard();
-  if (id === 's-calendar') buildCalendar();
 }
 
-/* ── API HELPERS ── */
-async function loadLastAnalysis() {
+function showFinal(title, body, extra) {
+  const t = $('final-title'), b = $('final-body'), e = $('final-extra');
+  if (t) t.textContent = title;
+  if (b) { b.textContent = body || ''; b.style.whiteSpace = 'pre-wrap'; }
+  if (e) e.innerHTML = extra || '';
+  go('s-final');
+}
+
+/* ── LOAD ON START ──────────────────────────────────────────────────────── */
+async function loadUserData() {
   if (!S.phone) return;
-  const res = await apiGet('/api/last-analysis?phone=' + encodeURIComponent(S.phone));
-  if (res && res.ok && res.analysis) {
-    S.lastAnalysis = res.analysis;
-    const syms = res.analysis.symptoms || [];
-    S.labels = syms;
-    S.remaining = [...syms];
-  }
-  const sessRes = await apiGet('/api/ruqiya-sessions?phone=' + encodeURIComponent(S.phone));
-  if (sessRes && sessRes.ok) {
-    S.sessions = sessRes.sessions || [];
-    S.sessionNum = S.sessions.length;
-    if (S.sessions.length > 0) {
-      const last = S.sessions[0];
-      const rem = last.remaining_symptoms;
-      if (rem) S.remaining = Array.isArray(rem) ? rem : JSON.parse(rem);
+  const res = await apiGet('/api/analysis/active?phone=' + encodeURIComponent(S.phone));
+  if (res && res.ok) {
+    S.analysis = res.analysis || null;
+    S.ruqiyaLogs = res.logs || [];
+    S.progress = res.progress || null;
+    if (S.analysis) {
+      S.activeSymptoms = S.analysis.all_symptoms || [];
+      // Oxirgi logdan aktiv simptomlarni olish
+      if (S.ruqiyaLogs.length > 0) {
+        const last = S.ruqiyaLogs[S.ruqiyaLogs.length - 1];
+        if (last.active_symptoms && last.active_symptoms.length > 0) {
+          S.activeSymptoms = last.active_symptoms;
+        }
+      }
     }
   }
 }
 
-/* ── BUILD FUNCTIONS ── */
+/* ── BUILD: HOLAT SCREEN ────────────────────────────────────────────────── */
+function buildHolat() {
+  const c = $('holat-content'); if (!c) return;
+
+  if (!S.analysis) {
+    // Tahlil yo'q — yangi tahlil qilish
+    c.innerHTML =
+      '<div class="notice n-info" style="margin-bottom:16px">' +
+      'Holatingizni aniqlash uchun alomatlarni belgilang va ' +
+      'o\'z so\'zlaringiz bilan tasvirlang.</div>' +
+      '<button class="btn btn-black" id="btn-start-analysis">Tahlilni boshlash →</button>';
+    $('btn-start-analysis').addEventListener('click', () => {
+      S.uyqu = new Set(); S.ongi = new Set(); S.xon = new Set();
+      go('s-uyqu');
+    });
+    return;
+  }
+
+  // Tahlil bor — ko'rsatish
+  const syms = S.activeSymptoms || [];
+  const logs = S.ruqiyaLogs || [];
+  const day = S.progress ? S.progress.max_day || 0 : 0;
+
+  let html = '<div class="res-card">';
+  html += '<div class="res-label">Belgilangan alomatlar (' + syms.length + ' ta)</div>';
+  if (syms.length) {
+    html += '<div class="tags" style="margin-bottom:12px">' +
+      syms.map(s => '<span class="tag">' + s + '</span>').join('') + '</div>';
+  }
+  html += '<div class="res-text" style="font-size:.82rem;color:#555;line-height:1.6">' +
+    'Belgilangan alomatlar asosida holatingiz tahlil qilindi. ' +
+    'Mutaxassis ko\'rigiga tashrif buyurish tavsiya etiladi. ' +
+    'Imkon bo\'lmasa, onlayn ruqiyani 11 kun davomida tinglashingiz mumkin.' +
+    '</div></div>';
+
+  // Progress
+  if (logs.length > 0) {
+    const pct = Math.min(Math.round(day / 11 * 100), 100);
+    html += '<div class="progress-card">' +
+      '<div class="progress-header"><span class="progress-title">🎧 Ruqiya kursi</span>' +
+      '<span class="progress-days">' + day + ' / 11 kun</span></div>' +
+      '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + pct + '%"></div></div>' +
+      '</div>';
+  }
+
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
+    '<button class="btn btn-black" id="btn-go-ruqiya">🎧 Ruqiya tinglash</button>' +
+    '<button class="btn btn-outline" id="btn-go-offline">📅 Tashrif yozish</button>' +
+    '</div>' +
+    '<button class="btn btn-outline" id="btn-new-analysis" style="margin-bottom:32px">🔄 Yangi tahlil</button>';
+
+  c.innerHTML = html;
+
+  $('btn-go-ruqiya').addEventListener('click', () => go('s-ruqiya'));
+  $('btn-go-offline').addEventListener('click', () => go('s-offline'));
+  $('btn-new-analysis').addEventListener('click', () => {
+    S.uyqu = new Set(); S.ongi = new Set(); S.xon = new Set();
+    go('s-uyqu');
+  });
+}
+
+/* ── BUILD: SYMPTOM LISTS ───────────────────────────────────────────────── */
 function buildList(cid, data, sel, pillId) {
   const c = $(cid); if (!c) return;
   c.innerHTML = '';
   const upd = () => {
     const p = $(pillId); if (!p) return;
     if (sel.size) { p.textContent = sel.size + ' ta belgilandi'; p.className = 'count-pill active'; }
-    else          { p.textContent = 'Hech narsa belgilanmadi';  p.className = 'count-pill empty'; }
+    else { p.textContent = 'Hech narsa belgilanmadi'; p.className = 'count-pill empty'; }
   };
   data.forEach(([lbl, key]) => {
     const row = document.createElement('div');
@@ -221,88 +292,315 @@ function buildComplaint() {
   const t = $('complaint-tags'); if (!t) return;
   t.innerHTML = lbl.length
     ? lbl.map(l => '<span class="tag">' + l + '</span>').join('')
-    : '<span class="tag">Alomatlar belgilanmagan</span>';
+    : '<span class="tag" style="color:#999">Alomatlar belgilanmagan</span>';
 }
 
-function buildResult() {
-  const lbl = allLabels();
-  S.labels = lbl;
-  if (!S.remaining.length) S.remaining = [...lbl];
-  const t = $('result-tags');
-  if (t) t.innerHTML = lbl.length ? lbl.map(l => '<span class="tag">' + l + '</span>').join('') : '<span class="tag">-</span>';
-  const s = $('result-sub');
-  if (s) s.textContent = lbl.length + ' ta alomat aniqlandi';
+/* ── BUILD: RUQIYA MENU ─────────────────────────────────────────────────── */
+function buildRuqiyaMenu() {
+  const c = $('ruqiya-content'); if (!c) return;
 
-  // Natijani ko'rsatish
-  const body = $('result-body');
-  if (body) {
-    if (S.rag_answer) {
-      body.textContent = S.rag_answer;
-      body.style.whiteSpace = 'pre-wrap';
-      body.style.fontSize = '.82rem';
+  // Tahlil yo'q → yo'naltirish
+  if (!S.analysis) {
+    c.innerHTML =
+      '<div class="notice n-warn" style="margin-bottom:16px">' +
+      '⚠️ Onlayn ruqiya tinglashdan oldin avval holatingizni aniqlang.' +
+      '</div>' +
+      '<button class="btn btn-black" id="btn-go-holat">Holatimni aniqlash →</button>';
+    $('btn-go-holat').addEventListener('click', () => go('s-holat'));
+    return;
+  }
+
+  const logs = S.ruqiyaLogs || [];
+  const day = S.progress ? (S.progress.max_day || 0) : 0;
+  const todayLogs = logs.filter(l => l.day_num === day + 1);
+  const nextDay = day + 1;
+  const nextListen = todayLogs.length + 1;
+  const canListenToday = todayLogs.length < 2; // Bir kunda max 2 marta
+
+  let html = '';
+
+  // Joriy holat
+  if (day > 0) {
+    html += '<div class="progress-card" style="margin-bottom:14px">' +
+      '<div class="progress-header"><span class="progress-title">🎧 Ruqiya kursi</span>' +
+      '<span class="progress-days">' + day + ' / 11 kun</span></div>' +
+      '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' +
+      Math.min(Math.round(day/11*100),100) + '%"></div></div></div>';
+  }
+
+  // Instruksiya
+  html += '<div class="res-card" style="margin-bottom:14px">' +
+    '<div class="res-label">Tinglash tartibi</div>' +
+    '<div class="res-text" style="font-size:.82rem">' +
+    '1. Tahorat oling\n2. Tinch xonada, ko\'zni yumib o\'tiring\n' +
+    '3. Naushnik yoki kolonka orqali tinglang\n' +
+    '⚠️ Terlash, titroq — shifo jarayoni boshlanganidan darak' +
+    '</div></div>';
+
+  if (canListenToday) {
+    html += '<button class="btn btn-black" id="btn-start-listen" style="margin-bottom:8px">' +
+      '▶ ' + nextDay + '-kun · ' + nextListen + '-marta tinglash</button>';
+  } else {
+    html += '<div class="notice n-info" style="margin-bottom:14px">' +
+      '✅ Bugun (' + day + '-kun) 2 marta tinglash bajarildi!</div>';
+    if (day < 11) {
+      html += '<button class="btn btn-outline" id="btn-start-listen" style="margin-bottom:8px">' +
+        '▶ ' + (nextDay) + '-kun · 1-marta tinglash</button>';
+    }
+  }
+
+  // Tarix
+  if (logs.length > 0) {
+    html += '<button class="btn btn-outline" id="btn-show-history" style="margin-bottom:32px">Tarixni ko\'rish</button>';
+  }
+
+  c.innerHTML = html;
+
+  const listenBtn = $('btn-start-listen');
+  if (listenBtn) {
+    listenBtn.addEventListener('click', () => {
+      // Kun va marta ni hisoblash
+      if (todayLogs.length < 2) {
+        S.currentDayNum = nextDay;
+        S.currentListenNum = nextListen;
+      } else {
+        S.currentDayNum = nextDay;
+        S.currentListenNum = 1;
+      }
+      S.selectedFeelings = new Set();
+      S.removedSymptoms = new Set();
+      S.addedSymptoms = new Set();
+      startListen();
+    });
+  }
+
+  const histBtn = $('btn-show-history');
+  if (histBtn) histBtn.addEventListener('click', showHistory);
+}
+
+/* ── LISTEN ─────────────────────────────────────────────────────────────── */
+function startListen() {
+  const label = $('listen-label');
+  if (label) label.textContent = S.currentDayNum + '-kun · ' + S.currentListenNum + '-marta';
+  const afterEl = $('listen-after');
+  if (afterEl) afterEl.style.display = 'none';
+  initListenAudio();
+  go('s-listen');
+}
+
+function initListenAudio() {
+  const audio = $('listen-audio'), btn = $('listen-btn');
+  const play = $('listen-ico-play'), pause = $('listen-ico-pause');
+  const fill = $('listen-fill'), time = $('listen-time');
+  const afterEl = $('listen-after');
+  if (!audio || !btn) return;
+  audio.pause(); audio.currentTime = 0;
+  if (AUDIO) audio.src = AUDIO;
+  const fmt = s => { const m=Math.floor(s/60),sec=Math.floor(s%60); return m+':'+String(sec).padStart(2,'0'); };
+  audio.onended = () => {
+    if (play)  play.style.display  = '';
+    if (pause) pause.style.display = 'none';
+    if (afterEl) afterEl.style.display = 'block';
+  };
+  audio.ontimeupdate = () => {
+    if (!audio.duration) return;
+    if (fill) fill.style.width = (audio.currentTime/audio.duration*100)+'%';
+    if (time) time.textContent = fmt(audio.currentTime)+' / '+fmt(audio.duration);
+  };
+  btn.onclick = () => {
+    if (audio.paused) {
+      audio.play();
+      if (play)  play.style.display  = 'none';
+      if (pause) pause.style.display = '';
     } else {
-      body.textContent = 'Tahlil natijasi bot chatida ko\'rinadi.';
+      audio.pause();
+      if (play)  play.style.display  = '';
+      if (pause) pause.style.display = 'none';
+    }
+  };
+  // Agar audio yo'q bo'lsa ham "Proslushaldim" tugmasini ko'rsat
+  if (!AUDIO) {
+    if (afterEl) afterEl.style.display = 'block';
+    btn.style.opacity = '.4';
+  }
+}
+
+/* ── AFTER LISTEN ───────────────────────────────────────────────────────── */
+function buildAfterListen() {
+  const c = $('feelings-list'); if (!c) return;
+  c.innerHTML = '';
+  S.selectedFeelings = new Set();
+  FEELINGS.forEach(f => {
+    const div = document.createElement('div');
+    div.className = 'feeling-item';
+    div.textContent = f.label;
+    div.addEventListener('click', () => {
+      if (S.selectedFeelings.has(f.id)) {
+        S.selectedFeelings.delete(f.id); div.classList.remove('active');
+      } else {
+        S.selectedFeelings.add(f.id); div.classList.add('active');
+      }
+    });
+    c.appendChild(div);
+  });
+}
+
+/* ── SYMPTOM UPDATE ─────────────────────────────────────────────────────── */
+function buildSymUpdate() {
+  const active = S.activeSymptoms || [];
+  const allSym = S.analysis ? (S.analysis.all_symptoms || []) : [];
+
+  // 1. Aktiv simptomlar — olib tashlash uchun
+  const removeList = $('sym-remove-list');
+  if (removeList) {
+    removeList.innerHTML = '';
+    S.removedSymptoms = new Set();
+    if (active.length === 0) {
+      removeList.innerHTML = '<div style="color:#999;font-size:.84rem">Aktiv alomatlar yo\'q</div>';
+    } else {
+      active.forEach((sym, i) => {
+        const div = document.createElement('div');
+        div.className = 'sym-item';
+        div.innerHTML = '<div class="sym-box"><svg class="sym-check" viewBox="0 0 14 14" fill="none"><polyline points="2,7 5.5,10.5 12,3.5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="sym-text">' + sym + '</span>';
+        div.addEventListener('click', () => {
+          if (S.removedSymptoms.has(i)) {
+            S.removedSymptoms.delete(i); div.classList.remove('checked');
+          } else {
+            S.removedSymptoms.add(i); div.classList.add('checked');
+          }
+        });
+        removeList.appendChild(div);
+      });
+    }
+  }
+
+  // 2. Yangi simptom qo'shish uchun — barcha kategoriyalar
+  const addSec = $('sym-add-section');
+  if (addSec) {
+    addSec.innerHTML = '';
+    S.addedSymptoms = new Set();
+    // Aktiv bo'lmagan simptomlarni ko'rsat
+    const notActive = [...UYQU, ...ONGI, ...XON].filter(([lbl]) => !active.includes(lbl));
+    if (notActive.length === 0) {
+      addSec.innerHTML = '<div style="color:#999;font-size:.84rem">Barcha alomatlar aktiv</div>';
+    } else {
+      notActive.forEach(([lbl, key]) => {
+        const div = document.createElement('div');
+        div.className = 'sym-item';
+        div.innerHTML = '<div class="sym-box"><svg class="sym-check" viewBox="0 0 14 14" fill="none"><polyline points="2,7 5.5,10.5 12,3.5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="sym-text">' + lbl + '</span>';
+        div.addEventListener('click', () => {
+          if (S.addedSymptoms.has(key)) {
+            S.addedSymptoms.delete(key); div.classList.remove('checked');
+          } else {
+            S.addedSymptoms.add(key); div.classList.add('checked');
+          }
+        });
+        addSec.appendChild(div);
+      });
     }
   }
 }
 
-function buildTracking() {
-  const rem = S.remaining.length ? S.remaining : S.labels;
-  const sub = $('track-sub');
-  if (sub) sub.textContent = S.session + '-seans - Qaysi alomatlar yo\'qoldi?';
-  const stats = $('track-stats');
-  if (stats) stats.innerHTML =
-    '<div class="stat-box"><div class="stat-n">' + S.labels.length + '</div><div class="stat-l">Jami</div></div>' +
-    '<div class="stat-box"><div class="stat-n g" id="res-num">' + S.resolved.size + '</div><div class="stat-l">Yo\'qoldi</div></div>' +
-    '<div class="stat-box"><div class="stat-n r" id="rem-num">' + rem.length + '</div><div class="stat-l">Qolgan</div></div>';
-  S.resolved = new Set();
-  const c = $('track-list'); if (!c) return;
-  c.innerHTML = '';
-  if (!rem.length) {
-    c.innerHTML = '<div class="notice notice-info">Barcha alomatlar yo\'qoldi! Allohga shukr!</div>';
-    return;
-  }
-  rem.forEach((sym, i) => {
-    const row = document.createElement('div');
-    row.className = 'sym-item';
-    row.innerHTML = '<div class="sym-box"><svg class="sym-check" viewBox="0 0 14 14" fill="none"><polyline points="2,7 5.5,10.5 12,3.5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="sym-text">' + sym + '</span>';
-    row.addEventListener('click', () => {
-      S.resolved.has(i) ? (S.resolved.delete(i), row.classList.remove('checked'))
-                        : (S.resolved.add(i),    row.classList.add('checked'));
-      const rn = $('res-num'), remn = $('rem-num');
-      if (rn)   rn.textContent = S.resolved.size;
-      if (remn) remn.textContent = rem.length - S.resolved.size;
+/* ── SAVE SESSION ───────────────────────────────────────────────────────── */
+async function saveSession() {
+  const active = S.activeSymptoms || [];
+  const removed = active.filter((_, i) => S.removedSymptoms.has(i));
+  const added = [...UYQU, ...ONGI, ...XON]
+    .filter(([, key]) => S.addedSymptoms.has(key))
+    .map(([lbl]) => lbl);
+  const newActive = active.filter((_, i) => !S.removedSymptoms.has(i)).concat(added);
+
+  const btn = $('btn-save-session');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saqlanmoqda...'; }
+
+  const res = await apiPost('/api/ruqiya/log', {
+    phone: S.phone,
+    day_num: S.currentDayNum,
+    listen_num: S.currentListenNum,
+    feelings: [...S.selectedFeelings],
+    active_symptoms: newActive,
+    removed_symptoms: removed,
+    added_symptoms: added,
+  });
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Saqlash →'; }
+
+  if (res && res.ok) {
+    // State ni yangilash
+    S.activeSymptoms = newActive;
+    S.ruqiyaLogs.push({
+      day_num: S.currentDayNum,
+      listen_num: S.currentListenNum,
+      active_symptoms: newActive,
+      removed_symptoms: removed,
     });
-    c.appendChild(row);
-  });
-}
+    if (res.progress) S.progress = res.progress;
 
-function buildHistory() {
-  const c = $('history-list'); if (!c) return;
-  const list = getSessions();
-  const total = S.labels.length;
-  if (!list.length) {
-    c.innerHTML = '<div class="notice notice-plain" style="text-align:center">Hali hech qanday seans bo\'lmagan.</div>';
-    return;
+    // Natijani ko'rsatish
+    const isAllDone = newActive.length === 0;
+    const is11Days = S.currentDayNum >= 11 && S.currentListenNum >= 1;
+
+    if (isAllDone) {
+      showFinal(
+        "Barcha alomatlar yo'qoldi!",
+        "Allohga shukr!\n" + S.currentDayNum + "-kun, " + S.currentListenNum + "-marta tinglangandan so'ng barcha alomatlar yo'qoldi.\n\nAlloh taolo Sizi O'z rahmatida asrasin!",
+        ''
+      );
+    } else if (is11Days) {
+      showFinal(
+        "11 kunlik kurs yakunlandi",
+        "Siz 11 kunlik ruqiya kursini yakunladingiz.\n\n" +
+        (removed.length > 0 ? removed.length + " ta alomat yo'qoldi.\n" : '') +
+        (newActive.length > 0 ? newActive.length + " ta alomat hali mavjud.\n\nMutaxassis ko'rigiga tashrif buyurish tavsiya etiladi." : ''),
+        '<button class="btn btn-outline" onclick="go(\'s-holat\')" style="margin-top:10px">Holatni ko\'rish</button>'
+      );
+    } else {
+      const msg = (removed.length > 0 ? removed.length + " ta alomat yaxshilandi\n" : "") +
+        newActive.length + " ta alomat qoldi\n\nDavom eting. Alloh shifo bersin!";
+      showFinal(
+        S.currentDayNum + "-kun · " + S.currentListenNum + "-marta saqlandi",
+        msg,
+        '<button class="btn btn-black" onclick="go(\'s-ruqiya\')" style="margin-top:10px">Ruqiya menyusi</button>'
+      );
+    }
+  } else {
+    showFinal('Xatolik', "Saqlashda muammo bo'ldi. Keyinroq urinib ko'ring.", '');
   }
-  const allRes = new Set(list.flatMap(s => s.res || []));
-  const pct = total > 0 ? Math.round(allRes.size / total * 100) : 0;
-  let html = '<div class="hist-summary"><div class="hist-pct">' + pct + '%</div><div class="hist-lbl">Umumiy yaxshilanish - ' + allRes.size + ' ta alomat yo\'qoldi</div><div class="hist-bar"><div class="hist-bar-f" style="width:' + pct + '%"></div></div></div>';
-  [...list].reverse().forEach((s, i) => {
-    const num = list.length - i;
-    const res = s.res || [], rem = s.rem || [];
-    const date = s.date ? new Date(s.date).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'}) : '-';
-    const sp = total > 0 ? Math.round(res.length / total * 100) : 0;
-    html += '<div class="hist-card"><div class="hist-head"><span class="hist-num">' + num + '-seans</span><span class="hist-date">' + date + '</span></div><div class="hist-prog"><div class="hist-prog-f" style="width:' + sp + '%"></div></div>';
-    if (res.length) html += '<div class="tags">' + res.map(r => '<span class="tag tag-g">' + r + '</span>').join('') + '</div>';
-    if (rem.length) html += '<div class="tags" style="margin-top:5px">' + rem.slice(0,4).map(r => '<span class="tag tag-r">' + r + '</span>').join('') + (rem.length>4?'<span class="tag tag-r">+' + (rem.length-4) + '</span>':'') + '</div>';
-    html += '</div>';
-  });
-  c.innerHTML = html;
 }
 
+/* ── HISTORY ────────────────────────────────────────────────────────────── */
+function showHistory() {
+  const logs = S.ruqiyaLogs || [];
+  if (!logs.length) { showFinal('Tarix', "Hali hech qanday seans bo'lmagan.", ''); return; }
+  let body = '';
+  const grouped = {};
+  logs.forEach(l => {
+    const key = l.day_num;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(l);
+  });
+  Object.keys(grouped).sort((a,b)=>a-b).forEach(day => {
+    const dayLogs = grouped[day];
+    body += day + '-kun:\n';
+    dayLogs.forEach(l => {
+      const rem = Array.isArray(l.removed_symptoms) ? l.removed_symptoms : [];
+      body += '  ' + l.listen_num + '-marta: -' + rem.length + ' ta alomat\n';
+    });
+  });
+  const initial = S.analysis ? (S.analysis.all_symptoms || []).length : 0;
+  const current = S.activeSymptoms.length;
+  const improved = initial - current;
+  body += '\nJami: ' + initial + ' ta → ' + current + ' ta (' +
+    (improved > 0 ? '-' + improved + ' ta' : 'o\'zgarish yo\'q') + ')';
+  showFinal('Ruqiya tarixi (' + logs.length + ' seans)', body,
+    '<button class="btn btn-outline" onclick="go(\'s-ruqiya\')" style="margin-top:10px">← Orqaga</button>');
+}
+
+/* ── OFFLINE ────────────────────────────────────────────────────────────── */
 function buildOffline() {
   S.date = ''; S.time = '';
+  const confirm = $('offline-confirm');
+  if (confirm) confirm.style.display = 'none';
   const grid = $('date-grid'); if (!grid) return;
   grid.innerHTML = '';
   const WD = ['Yak','Dush','Sesh','Chor','Pay','Jum','Shan'];
@@ -316,8 +614,7 @@ function buildOffline() {
       btn.innerHTML = '<span class="pk">' + d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'}) + '</span><span class="ps">' + WD[d.getDay()] + '</span>';
       btn.addEventListener('click', () => {
         document.querySelectorAll('#date-grid .pick').forEach(b => b.classList.remove('sel'));
-        btn.classList.add('sel');
-        S.date = iso; updOffline();
+        btn.classList.add('sel'); S.date = iso; updOffline();
       });
       grid.appendChild(btn); n++;
     }
@@ -328,242 +625,33 @@ function buildOffline() {
     btn.parentNode.replaceChild(clone, btn);
     clone.addEventListener('click', () => {
       document.querySelectorAll('.time-pick').forEach(b => b.classList.remove('sel'));
-      clone.classList.add('sel');
-      S.time = clone.dataset.time; updOffline();
+      clone.classList.add('sel'); S.time = clone.dataset.time; updOffline();
     });
   });
 }
 
 function updOffline() {
   const c = $('offline-confirm'), s = $('offline-sel');
-  if (c && s && S.date && S.time) {
-    s.textContent = S.date + ' - ' + S.time;
-    c.style.display = 'block';
-  }
+  if (c && s && S.date && S.time) { s.textContent = S.date + ' — ' + S.time; c.style.display = 'block'; }
 }
 
-function buildDashboard() {
-  if (!S.lastAnalysis) { go('s-uyqu'); return; }
-  const dateEl = $('dash-date');
-  if (dateEl && S.lastAnalysis.created_at) {
-    const d = new Date(S.lastAnalysis.created_at);
-    dateEl.textContent = d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'});
-  }
-  const card = $('dash-result-card'), ansEl = $('dash-answer');
-  if (card && ansEl && S.lastAnalysis.rag_answer) {
-    ansEl.textContent = S.lastAnalysis.rag_answer.slice(0,600) + (S.lastAnalysis.rag_answer.length > 600 ? '...' : '');
-    card.style.display = 'block';
-  }
-  const prog = $('dash-progress');
-  if (prog && S.sessions.length > 0) {
-    prog.style.display = 'block';
-    const days = Math.min(S.sessions.length, 11);
-    const pct = Math.round(days / 11 * 100);
-    const bar = $('dash-bar');
-    if (bar) bar.style.width = pct + '%';
-    const daysEl = $('dash-days');
-    if (daysEl) daysEl.textContent = days + ' / 11 kun';
-    const allResolved = new Set();
-    S.sessions.forEach(sess => {
-      const res = Array.isArray(sess.resolved_symptoms) ? sess.resolved_symptoms : [];
-      res.forEach(r => allResolved.add(r));
-    });
-    const resolvedEl = $('dash-resolved');
-    if (resolvedEl) resolvedEl.textContent = allResolved.size + ' ta alomat yaxshilandi';
-    const remEl = $('dash-remaining');
-    if (remEl) remEl.textContent = S.remaining.length + ' ta qolgan';
-  }
-}
-
-function buildCalendar() {
-  const grid = $('calendar-grid'); if (!grid) return;
-  grid.innerHTML = '';
-  for (let d = 1; d <= 11; d++) {
-    const div = document.createElement('div');
-    div.className = 'cal-day';
-    if (d <= S.sessions.length) {
-      div.classList.add('done');
-      div.innerHTML = '<div class="cal-day-num">' + d + '</div><div class="cal-day-dot"></div>';
-      const sessForDay = S.sessions[S.sessions.length - d];
-      if (sessForDay) {
-        div.style.cursor = 'pointer';
-        div.addEventListener('click', function() { showSessionDetail(sessForDay, d); });
-      }
-    } else if (d === S.sessions.length + 1) {
-      div.classList.add('active');
-      div.innerHTML = '<div class="cal-day-num">' + d + '</div>';
-    } else {
-      div.classList.add('future');
-      div.innerHTML = '<div class="cal-day-num">' + d + '</div>';
-    }
-    grid.appendChild(div);
-  }
-  const summary = $('calendar-summary');
-  if (summary && S.sessions.length > 0) {
-    const allRes = new Set();
-    S.sessions.forEach(sess => {
-      const res = Array.isArray(sess.resolved_symptoms) ? sess.resolved_symptoms : [];
-      res.forEach(x => allRes.add(x));
-    });
-    const total = S.labels.length || 1;
-    const pct = Math.round(allRes.size / total * 100);
-    summary.style.display = 'block';
-    summary.innerHTML = '<strong>' + S.sessions.length + ' seans o\'tkazildi</strong> - ' + pct + '% yaxshilanish<br>- ' + allRes.size + ' ta alomat yo\'qoldi - ' + S.remaining.length + ' ta qoldi';
-  }
-}
-
-function showSessionDetail(session, dayNum) {
-  const res = Array.isArray(session.resolved_symptoms) ? session.resolved_symptoms : [];
-  const rem = Array.isArray(session.remaining_symptoms) ? session.remaining_symptoms : [];
-  const resLines = res.length ? res.map(function(r){ return '  - ' + r; }).join('\n') : '  --';
-  const remLines = rem.slice(0,5).map(function(r){ return '  - ' + r; }).join('\n') || '  --';
-  const body = "Yo'qolgan: " + res.length + " ta\n" + resLines + "\n\nQolgan: " + rem.length + " ta\n" + remLines;
-  showFinal(dayNum + '-seans natijasi', body, '');
-}
-
-function buildSessionSymptoms() {
-  const rem = S.remaining.length ? S.remaining : S.labels;
-  const c = $('session-symptoms-list'); if (!c) return;
-  c.innerHTML = '';
-  S.sessionSymbols = new Set();
-  rem.forEach((sym, i) => {
-    const div = document.createElement('div');
-    div.className = 'sym-item';
-    div.innerHTML = '<div class="sym-box"><svg class="sym-check" viewBox="0 0 14 14" fill="none"><polyline points="2,7 5.5,10.5 12,3.5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="sym-text">' + sym + '</span>';
-    div.addEventListener('click', () => {
-      S.sessionSymbols.has(i) ? (S.sessionSymbols.delete(i), div.classList.remove('checked'))
-                              : (S.sessionSymbols.add(i),    div.classList.add('checked'));
-    });
-    c.appendChild(div);
-  });
-}
-
-function initSessionAudio() {
-  const audio = $('session-audio'), btn = $('session-audio-btn');
-  const play  = $('session-ico-play'), pause = $('session-ico-pause');
-  const fill  = $('session-audio-fill'), time = $('session-audio-time');
-  const afterEl = $('session-after-listen');
-  if (!audio || !btn) return;
-  if (AUDIO) audio.src = AUDIO;
-  const fmt = s => { const m = Math.floor(s/60), sec = Math.floor(s%60); return m + ':' + String(sec).padStart(2,'0'); };
-  audio.addEventListener('timeupdate', () => {
-    if (!audio.duration) return;
-    if (fill) fill.style.width = (audio.currentTime/audio.duration*100) + '%';
-    if (time) time.textContent = fmt(audio.currentTime) + ' / ' + fmt(audio.duration);
-  });
-  audio.addEventListener('ended', () => {
-    if (play)  play.style.display  = '';
-    if (pause) pause.style.display = 'none';
-    if (fill)  fill.style.width = '0%';
-    if (afterEl) afterEl.style.display = 'block';
-    buildSessionSymptoms();
-  });
-  btn.addEventListener('click', () => {
-    if (audio.paused) {
-      audio.play();
-      if (play)  play.style.display  = 'none';
-      if (pause) pause.style.display = '';
-    } else {
-      audio.pause();
-      if (play)  play.style.display  = '';
-      if (pause) pause.style.display = 'none';
-    }
-  });
-  const bar = document.querySelector('#session-audio-bar');
-  if (bar) bar.addEventListener('click', e => {
-    if (!audio.duration) return;
-    const r = bar.getBoundingClientRect();
-    audio.currentTime = (e.clientX - r.left) / r.width * audio.duration;
-  });
-}
-
-function showFinal(title, body, extra) {
-  if (extra === undefined) extra = '';
-  const t = $('final-title'), b = $('final-body'), e = $('final-extra');
-  if (t) t.textContent = title;
-  if (b) { b.textContent = body; b.style.whiteSpace = 'pre-wrap'; }
-  if (e) e.innerHTML = extra;
-  go('s-final');
-}
-
-function showErr(id, msg) {
-  const e = $(id); if (!e) return;
-  e.textContent = msg; e.style.display = 'block';
-  setTimeout(() => { e.style.display = 'none'; }, 3500);
-}
-
-/* ── AUDIO (main ruqiya screen) ── */
-function initAudio() {
-  const audio = $('ruqiya-audio'), btn = $('audio-btn');
-  const play  = $('ico-play'), pause = $('ico-pause');
-  const fill  = $('audio-fill'), time = $('audio-time');
-  const miss  = $('audio-missing');
-  if (!audio || !btn) return;
-  if (!AUDIO) {
-    if (miss) miss.style.display = 'block';
-    btn.style.opacity = '.4'; btn.style.pointerEvents = 'none';
-    return;
-  }
-  audio.src = AUDIO;
-  const fmt = s => { const m = Math.floor(s/60), sec = Math.floor(s%60); return m + ':' + String(sec).padStart(2,'0'); };
-  audio.addEventListener('timeupdate', () => {
-    if (!audio.duration) return;
-    if (fill) fill.style.width = (audio.currentTime/audio.duration*100) + '%';
-    if (time) time.textContent = fmt(audio.currentTime) + ' / ' + fmt(audio.duration);
-  });
-  audio.addEventListener('ended', () => {
-    if (play)  play.style.display  = '';
-    if (pause) pause.style.display = 'none';
-    if (fill)  fill.style.width    = '0%';
-    S.session++;
-    if (!S.remaining.length) S.remaining = [...S.labels];
-    const ab = $('btn-after-listen');
-    if (ab) ab.style.display = 'block';
-  });
-  btn.addEventListener('click', () => {
-    if (audio.paused) {
-      audio.play();
-      if (play)  play.style.display  = 'none';
-      if (pause) pause.style.display = '';
-    } else {
-      audio.pause();
-      if (play)  play.style.display  = '';
-      if (pause) pause.style.display = 'none';
-    }
-  });
-  const bar = document.querySelector('.audio-bar');
-  if (bar) bar.addEventListener('click', e => {
-    if (!audio.duration) return;
-    const r = bar.getBoundingClientRect();
-    audio.currentTime = (e.clientX - r.left) / r.width * audio.duration;
-  });
-}
-
-function goCalendar() { buildCalendar(); go('s-calendar'); }
-
-/* ════════════════════════════════
+/* ═══════════════════════════════════════════
    DOMContentLoaded
-   ════════════════════════════════ */
+═══════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
   if (tg) tg.BackButton.onClick(() => { const t = BACK[cur]; if (t) go(t); });
   $('btn-back')?.addEventListener('click', () => { const t = BACK[cur]; if (t) go(t); });
 
-  document.addEventListener('click', e => {
-    const el = e.target.closest('[data-goto]');
-    if (!el) return;
-    go(el.dataset.goto);
+  /* MENU tiles */
+  document.querySelectorAll('.tile[data-goto]').forEach(t => {
+    t.addEventListener('click', () => go(t.dataset.goto));
   });
 
-  /* tiles */
-  document.querySelectorAll('.tile[data-goto]').forEach(t => {
-    t.addEventListener('click', () => {
-      const dest = t.dataset.goto;
-      if (dest === 's-uyqu' && S.lastAnalysis) {
-        buildDashboard(); go('s-dashboard'); return;
-      }
-      go(dest);
-    });
-  });
+  /* HOLATIMNI ANIQLASH tile override */
+  const holatTile = document.querySelector('.tile[data-goto="s-holat"]');
+  if (holatTile) {
+    holatTile.addEventListener('click', () => go('s-holat'), true);
+  }
 
   /* SYMPTOM NEXT */
   $('btn-uyqu')?.addEventListener('click', () => go('s-ongi'));
@@ -574,17 +662,12 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btn-complaint')?.addEventListener('click', async () => {
     const txt = $('complaint-text')?.value.trim();
     if (!txt || txt.length < 10) return showErr('complaint-err', 'Kamida 10 ta belgi kiriting');
-    S.labels    = allLabels();
-    S.remaining = [...S.labels];
     go('s-loading');
 
-    const payload = {
-      uyqu_symptoms:    labelsOf(UYQU, S.uyqu),
-      ongi_symptoms:    labelsOf(ONGI, S.ongi),
-      xonadon_symptoms: labelsOf(XON,  S.xon),
-      all_symptoms:     S.labels,
-      complaint:        txt,
-    };
+    const uyqu = labelsOf(UYQU, S.uyqu);
+    const ongi = labelsOf(ONGI, S.ongi);
+    const xon  = labelsOf(XON,  S.xon);
+    const all  = allLabels();
 
     const msgs = [
       ['Tahlil qilinmoqda','GROQ AI javob tayyorlamoqda'],
@@ -599,218 +682,125 @@ document.addEventListener('DOMContentLoaded', () => {
       if (s) s.textContent = msgs[mi][1];
     }, 2500);
 
-    try {
-      const userData = (() => { try { return JSON.parse(localStorage.getItem('tvd_user') || '{}'); } catch { return {}; } })();
-      const phone = userData.phone || localStorage.getItem('tvd_phone') || '';
-      const res = await fetch(API + '/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, phone }),
-        signal: AbortSignal.timeout(35000),
-      });
-      clearInterval(iv);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.ok && data.answer) S.rag_answer = data.answer;
-      }
-    } catch(e) {
-      console.warn('API analyze xatolik:', e.message);
-    }
+    const res = await apiPost('/api/analyze', {
+      phone: S.phone,
+      uyqu_symptoms: uyqu, ongi_symptoms: ongi,
+      xonadon_symptoms: xon, all_symptoms: all,
+      complaint: txt,
+    });
 
     clearInterval(iv);
+
+    if (res && res.ok) {
+      S.rag_answer = res.answer || '';
+      if (res.analysis_id) {
+        // Yangidan yuklash
+        await loadUserData();
+      }
+    }
+
+    // Result ekranini qurish
+    const rb = $('result-body');
+    if (rb) {
+      rb.textContent = S.rag_answer || 'Tahlil natijasi yuklanmadi.';
+      rb.style.whiteSpace = 'pre-wrap';
+      rb.style.fontSize = '.82rem';
+    }
+    const rt = $('result-tags');
+    if (rt) rt.innerHTML = all.map(s => '<span class="tag">' + s + '</span>').join('') || '<span class="tag">-</span>';
+
     go('s-result');
   });
 
-  /* RESULT */
+  /* RESULT buttons */
+  $('btn-to-ruqiya')?.addEventListener('click', () => go('s-ruqiya'));
   $('btn-to-offline')?.addEventListener('click', () => go('s-offline'));
-  $('btn-to-ruqiya')?.addEventListener('click',  () => go('s-ruqiya'));
 
-  /* AFTER LISTEN */
-  $('btn-after-listen')?.addEventListener('click', () => go('s-tracking'));
+  /* LISTEN — proslushaldim */
+  $('btn-listened')?.addEventListener('click', () => go('s-after-listen'));
 
-  /* EFFECT items */
-  document.querySelectorAll('.effect-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const eff = item.dataset.effect;
-      send('ruqiya_effect', { effect: eff });
-      if (eff === 'yes') {
-        showFinal("Allohga shukr!", "Ruqiya ta'sir qilmoqda - davom eting!\nAlomatlaringizni kuzatib boring.");
-      } else if (eff === 'continue') {
-        showFinal('Davom etmoqda', 'Ruqiyani davom ettiring. 11 kundan keyin qayta tekshiring.');
-      } else {
-        showFinal('Shaxsan tashrif tavsiya etiladi',
-          "Onlayn ruqiya yordam bermagan bo'lsa, TIB VA DAM markaziga tashrif buyuring.\n\nYangi Toshkent, Gulzor MFY\nJumaday tashqari: 07:00 va 20:00",
-          '<button class="btn btn-black" onclick="go(\'s-offline\')" style="margin-top:10px">Tashrif yozish</button>'
-        );
-      }
-    });
-  });
+  /* AFTER LISTEN — davom etish */
+  $('btn-to-sym-update')?.addEventListener('click', () => go('s-sym-update'));
 
-  /* TRACKING SAVE */
-  $('btn-track-save')?.addEventListener('click', () => {
-    const rem = S.remaining.length ? S.remaining : S.labels;
-    const res = [...S.resolved].map(i => rem[i]).filter(Boolean);
-    const newR = rem.filter((_, i) => !S.resolved.has(i));
-    const status = !newR.length || res.length > 0 ? 'better' : 'same';
-    S.remaining = newR;
-    saveSession({ session: S.session, date: new Date().toISOString(), res, rem: newR, total: S.labels.length });
-    send('symptom_tracking', { tracking_type:'online', session_num:S.session, resolved_symptoms:res, remaining_symptoms:newR, overall_status:status });
-    if (!newR.length) {
-      showFinal("Barcha alomatlar yo'qoldi!", "Allohga shukr! Siz " + S.session + " seans tingladi.\nAlloh taolo Sizi O'z rahmatida asrasin!",
-        '<button class="btn btn-outline" onclick="go(\'s-history\')" style="margin-top:10px">Tarixni ko\'rish</button>');
-    } else if (res.length) {
-      showFinal(S.session + "-seans saqlandi",
-        res.length + " ta alomat yaxshilandi\n" + newR.length + " ta alomat qoldi\n\nDavom eting. Alloh shifo bersin!",
-        '<button class="btn btn-black" onclick="go(\'s-ruqiya\')" style="margin-top:10px">Yangi seans</button><button class="btn btn-outline" onclick="go(\'s-history\')" style="margin-top:8px">Tarixni ko\'rish</button>');
-    } else {
-      showFinal(S.session + "-seans saqlandi",
-        "Bu seansda o'zgarish sezilmadi. Davom eting.\n\nAlloh shifo bersin!",
-        '<button class="btn btn-black" onclick="go(\'s-ruqiya\')" style="margin-top:10px">Yangi seans</button>');
-    }
-  });
+  /* SAVE SESSION */
+  $('btn-save-session')?.addEventListener('click', saveSession);
 
   /* OFFLINE */
-  $('btn-offline')?.addEventListener('click', () => {
+  $('btn-offline')?.addEventListener('click', async () => {
     if (!S.date) return showErr('offline-err', 'Sanani tanlang');
     if (!S.time) return showErr('offline-err', 'Vaqtni tanlang');
-    send('offline_visit', { visit_date: S.date, visit_time: S.time });
-    showFinal('Tashrifga yozilish tasdiqlandi!', S.date + ' - ' + S.time + '\nYangi Toshkent, Gulzor MFY\n\nMenejer siz bilan bog\'lanadi.');
+    const btn = $('btn-offline');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saqlanmoqda...'; }
+    const res = await apiPost('/api/offline', {
+      phone: S.phone, visit_date: S.date, visit_time: S.time,
+    });
+    if (btn) { btn.disabled = false; btn.textContent = 'Tashrifga yozilish →'; }
+    showFinal('Tashrifga yozilish tasdiqlandi!',
+      S.date + ' — ' + S.time + '\nYangi Toshkent, Gulzor MFY\n\nMenejer siz bilan bog\'lanadi.',
+      '');
   });
 
   /* INFO */
+  const INFO = {
+    domla: {
+      title: 'Sayfulloh domla haqida',
+      body: "O'zbekiston Xalq Tabobati Assotsiatsiyasi a'zosi.\n\nOliy ma'lumotli mutaxassis — Misr, Saudiya Arabistoni, Turkiya, Moskva va Sankt-Peterburgda tahsil olgan.\n\n'Ruhiy bezovtalik muolajasi' sohasida ixtisoslashgan tajribali Roqiy.",
+    },
+    markaz: {
+      title: 'TIB VA DAM markazi',
+      body: "Yangi Toshkent, Gulzor MFY\nYangi Qo'yliq bozori, Food City ko'chasi\n\nQabul: Jumaday tashqari har kuni\n- Ertalab: 07:00\n- Kechqurun: 20:00",
+    },
+    manzil: {
+      title: 'Manzil',
+      body: "Yangi Toshkent, Gulzor MFY\nYangi Qo'yliq bozori, Food City ko'chasi",
+    },
+  };
   document.querySelectorAll('.info-row[data-info]').forEach(row => {
     row.addEventListener('click', () => {
-      const data = INFO_DATA[row.dataset.info]; if (!data) return;
+      const d = INFO[row.dataset.info]; if (!d) return;
       const c = $('info-content');
-      if (c) c.innerHTML = '<div class="res-label">' + data.title + '</div><div class="res-text">' + data.body + '</div>';
-      const mw = $('map-wrap'), mf = $('map-frame');
-      if (mw && mf) {
-        if (data.map) { mf.src = 'https://maps.google.com/maps?q=' + data.lat + ',' + data.lon + '&z=16&output=embed'; mw.style.display = 'block'; }
-        else mw.style.display = 'none';
-      }
+      if (c) c.innerHTML = '<div class="res-label">' + d.title + '</div><div class="res-text">' + d.body + '</div>';
       go('s-info-detail');
     });
-  });
-
-  /* DASHBOARD buttons */
-  $('dash-btn-ruqiya')?.addEventListener('click', () => {
-    S.sessionNum = S.sessions.length + 1;
-    const lbl = $('session-num-label');
-    if (lbl) lbl.textContent = S.sessionNum + '-seans';
-    const afterEl = $('session-after-listen');
-    if (afterEl) afterEl.style.display = 'none';
-    S.currentFeelings = new Set();
-    initSessionAudio();
-    go('s-ruqiya-session');
-  });
-  $('dash-btn-offline')?.addEventListener('click', () => go('s-offline'));
-  $('dash-btn-new')?.addEventListener('click', () => {
-    S.uyqu = new Set(); S.ongi = new Set(); S.xon = new Set();
-    S.rag_answer = '';
-    go('s-uyqu');
-  });
-
-  /* FEELINGS */
-  document.querySelectorAll('.feeling-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const f = item.dataset.feeling;
-      if (S.currentFeelings.has(f)) { S.currentFeelings.delete(f); item.classList.remove('active'); }
-      else { S.currentFeelings.add(f); item.classList.add('active'); }
-    });
-  });
-
-  /* SESSION SAVE */
-  $('btn-session-save')?.addEventListener('click', async () => {
-    const rem = S.remaining.length ? S.remaining : S.labels;
-    const resolved  = rem.filter((_, i) => S.sessionSymbols.has(i));
-    const remaining = rem.filter((_, i) => !S.sessionSymbols.has(i));
-    S.remaining = remaining;
-
-    const btn = $('btn-session-save');
-    if (btn) { btn.disabled = true; btn.textContent = 'Saqlanmoqda...'; }
-
-    const res = await apiPost('/api/ruqiya-track', {
-      phone: S.phone,
-      session_num: S.sessionNum,
-      resolved_symptoms: resolved,
-      remaining_symptoms: remaining,
-      feelings: [...S.currentFeelings].join(', '),
-    });
-
-    if (res && res.ok) {
-      S.sessions.unshift({ resolved_symptoms: resolved, remaining_symptoms: remaining, overall_status: resolved.length > 0 ? 'better' : 'same' });
-      S.sessionNum++;
-    }
-    if (btn) { btn.disabled = false; btn.textContent = 'Seansni saqlash ->'; }
-
-    if (S.remaining.length === 0 || S.sessions.length >= 11) {
-      showFinal(
-        S.remaining.length === 0 ? "Barcha alomatlar yo'qoldi!" : "11 kunlik kurs yakunlandi!",
-        S.remaining.length === 0 ? "Allohga shukr! Siz " + S.sessions.length + " ta seans o'tkazdingiz.\nAlloh taolo Sizi O'z rahmatida asrasin!" : S.sessions.length + " seans o'tkazildi.\nMutaxassis ko'rigiga tashrif buyurish tavsiya etiladi.",
-        '<button class="btn btn-outline" onclick="goCalendar()" style="margin-top:10px">Kalendarni ko\'rish</button>'
-      );
-    } else {
-      showFinal(
-        (S.sessionNum - 1) + "-seans yakunlandi",
-        resolved.length + " ta alomat yaxshilandi\n" + remaining.length + " ta qolgan\n\nDavom eting. Alloh shifo bersin!",
-        '<button class="btn btn-black" onclick="goCalendar()" style="margin-top:10px">Kalendarni ko\'rish</button>'
-      );
-    }
-  });
-
-  /* CALENDAR */
-  $('btn-start-session')?.addEventListener('click', () => {
-    S.sessionNum = S.sessions.length + 1;
-    const lbl = $('session-num-label');
-    if (lbl) lbl.textContent = S.sessionNum + '-seans';
-    const afterEl = $('session-after-listen');
-    if (afterEl) afterEl.style.display = 'none';
-    S.currentFeelings = new Set();
-    initSessionAudio();
-    go('s-ruqiya-session');
   });
 
   /* CLOSE */
   $('btn-close')?.addEventListener('click', () => { if (tg) tg.close(); });
 
-  /* START */
-  initAudio();
-
+  /* ── START ── */
   setTimeout(async () => {
     try {
-      // 1. tvd_user dan tekshirish
+      // 1. localStorage dan foydalanuvchi
       const saved = localStorage.getItem('tvd_user');
       if (saved) {
         const u = JSON.parse(saved);
         if (u && u.full_name) {
-          S.reg = true;
+          S.user = u;
           S.phone = u.phone || localStorage.getItem('tvd_phone') || '';
-          console.log('[TVD] User from localStorage:', u.full_name, 'phone:', S.phone);
-          if (S.phone) await loadLastAnalysis();
+          if (S.phone) await loadUserData();
+          // Menu sarlavhasini yangilash
+          const title = $('menu-title');
+          if (title) title.textContent = 'Assalomu alaykum, ' + u.full_name.split(' ')[0] + '!';
           go('s-menu');
           return;
         }
       }
-
-      // 2. tvd_phone dan tekshirish (agar tvd_user yo'q bo'lsa)
+      // 2. Telefon bilan tekshirish
       const phone = localStorage.getItem('tvd_phone');
       if (phone) {
-        console.log('[TVD] Checking by phone:', phone);
         const res = await apiPost('/api/check-user', { phone });
-        if (res && res.ok && res.exists && res.user) {
-          const u = res.user;
-          S.reg = true;
+        if (res && res.ok && res.exists) {
+          S.user = res.user;
           S.phone = phone;
-          // tvd_user ni qayta saqlash
-          try { localStorage.setItem('tvd_user', JSON.stringify({...u, phone})); } catch {}
-          console.log('[TVD] User found by phone:', u.full_name);
-          await loadLastAnalysis();
+          try { localStorage.setItem('tvd_user', JSON.stringify({...res.user, phone})); } catch {}
+          await loadUserData();
+          const title = $('menu-title');
+          if (title && res.user.full_name) title.textContent = 'Assalomu alaykum, ' + res.user.full_name.split(' ')[0] + '!';
           go('s-menu');
           return;
         }
       }
-    } catch(e) { console.warn('[TVD] start error:', e); }
-    // Ro'yxatdan o'tish sahifasiga
+    } catch(e) { console.warn('start error:', e); }
     window.location.href = 'register.html';
   }, 100);
 });
