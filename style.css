@@ -345,3 +345,101 @@ html, body {
 .loader-sub   { font-size: .84rem; color: var(--gray-400); font-weight: 500; }
 
 ::-webkit-scrollbar { width: 0; }
+
+
+/* ── DASHBOARD ──────────────────────────────────────────── */
+.res-card {
+  background: var(--gray-50); border: 1.5px solid var(--gray-200);
+  border-radius: 16px; padding: 16px; margin-bottom: 14px;
+}
+.res-label { font-size: .72rem; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--gray-400); margin-bottom: 10px; }
+.res-text { font-size: .84rem; line-height: 1.65; color: var(--black);
+  white-space: pre-wrap; max-height: 220px; overflow-y: auto; }
+
+.progress-card {
+  background: var(--black); border-radius: 16px;
+  padding: 16px 18px; margin-bottom: 14px; color: #fff;
+}
+.progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.progress-title { font-size: .88rem; font-weight: 700; }
+.progress-days  { font-size: .78rem; opacity: .7; }
+.progress-bar-wrap { background: rgba(255,255,255,.15); border-radius: 99px; height: 6px; margin-bottom: 10px; }
+.progress-bar-fill { background: #fff; height: 6px; border-radius: 99px; transition: width .5s ease; }
+.progress-stats { display: flex; justify-content: space-between; font-size: .75rem; opacity: .8; }
+
+.dash-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.dash-btn {
+  background: var(--gray-50); border: 1.5px solid var(--gray-200);
+  border-radius: 14px; padding: 16px 12px; display: flex; flex-direction: column;
+  align-items: center; gap: 6px; cursor: pointer;
+  transition: background .15s, transform .1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.dash-btn:active { background: var(--gray-100); transform: scale(.97); }
+.dash-btn-icon  { font-size: 1.6rem; }
+.dash-btn-label { font-size: .78rem; font-weight: 600; color: var(--black); text-align: center; }
+
+/* ── RUQIYA SESSION ─────────────────────────────────────── */
+.audio-card {
+  background: var(--black); border-radius: 16px;
+  padding: 20px; margin-bottom: 16px; color: #fff; text-align: center;
+}
+.audio-title { font-size: .88rem; font-weight: 700; margin-bottom: 14px; opacity: .8; }
+.audio-bar {
+  background: rgba(255,255,255,.2); border-radius: 99px;
+  height: 5px; margin-bottom: 8px; cursor: pointer; position: relative;
+}
+.audio-fill { background: #fff; height: 5px; border-radius: 99px;
+  width: 0%; transition: width .3s linear; }
+.audio-time { font-size: .75rem; opacity: .6; margin-bottom: 14px; }
+.audio-btn {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(255,255,255,.15); border: none;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto; cursor: pointer; color: #fff;
+  transition: background .15s;
+}
+.audio-btn:hover { background: rgba(255,255,255,.25); }
+
+.feelings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+.feeling-item {
+  background: var(--gray-50); border: 1.5px solid var(--gray-200);
+  border-radius: 10px; padding: 10px 12px; font-size: .82rem;
+  font-weight: 500; cursor: pointer; text-align: center;
+  transition: all .15s; -webkit-tap-highlight-color: transparent;
+}
+.feeling-item.active {
+  background: var(--black); color: #fff; border-color: var(--black);
+}
+
+/* ── CALENDAR ───────────────────────────────────────────── */
+.calendar-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 6px; margin-bottom: 16px;
+}
+.cal-day {
+  aspect-ratio: 1; border-radius: 10px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-size: .7rem; font-weight: 700;
+  background: var(--gray-50); border: 1.5px solid var(--gray-200);
+  cursor: pointer; position: relative;
+}
+.cal-day.done     { background: #e6f8f3; border-color: #00b37a; color: #006b50; }
+.cal-day.active   { background: var(--black); color: #fff; border-color: var(--black); }
+.cal-day.future   { opacity: .35; pointer-events: none; }
+.cal-day-num  { font-size: .85rem; line-height: 1; }
+.cal-day-dot  { width: 5px; height: 5px; border-radius: 50%;
+  background: #00b37a; margin-top: 3px; }
+
+.cal-summary {
+  background: var(--gray-50); border: 1.5px solid var(--gray-200);
+  border-radius: 14px; padding: 14px 16px; margin-bottom: 14px;
+  font-size: .84rem; line-height: 1.6;
+}
+
+.section-title {
+  font-size: .72rem; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--gray-400); margin-bottom: 8px;
+}
