@@ -203,10 +203,24 @@ function buildResult() {
   const lbl = allLabels();
   S.labels = lbl;
   if (!S.remaining.length) S.remaining = [...lbl];
+
   const t = $('result-tags');
   if (t) t.innerHTML = lbl.length ? lbl.map(l => `<span class="tag">${l}</span>`).join('') : '<span class="tag">—</span>';
+
   const s = $('result-sub');
   if (s) s.textContent = `${lbl.length} ta alomat aniqlandi`;
+
+  // API dan kelgan javobni ko'rsatish
+  const body = $('result-body');
+  if (body) {
+    if (S.rag_answer) {
+      body.textContent = S.rag_answer;
+      body.style.whiteSpace = 'pre-wrap';
+      body.style.fontSize = '.82rem';
+    } else {
+      body.textContent = "Tahlil natijasi yuklanmoqda yoki mavjud emas. Bot orqali ham tahlil qilishingiz mumkin.";
+    }
+  }
 }
 
 function buildTracking() {
@@ -443,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btn-xon')?.addEventListener('click',  () => go('s-complaint'));
 
   /* ── COMPLAINT ── */
-  $('btn-complaint')?.addEventListener('click', () => {
+  $('btn-complaint')?.addEventListener('click', async () => {
     const txt = $('complaint-text')?.value.trim();
     if (!txt || txt.length < 10) return showErr('complaint-err', 'Kamida 10 ta belgi kiriting');
     S.labels    = allLabels();
@@ -457,21 +471,55 @@ document.addEventListener('DOMContentLoaded', () => {
       all_symptoms:     S.labels,
       complaint:        txt,
     };
-    send('analysis', payload);
 
+    // Loading animatsiya
     const msgs = [
-      ['Tahlil qilinmoqda',        'Bot javob tayyorlamoqda'],
+      ['Tahlil qilinmoqda',        'GROQ AI javob tayyorlamoqda'],
       ['Alomatlar tekshirilmoqda',  'Biroz sabr qiling'],
-      ['Deyarli tayyor',            "Natija chatda ko'rinadi"],
+      ['Natija tayorlanmoqda',      'Deyarli tayyor...'],
     ];
     let mi = 0;
     const iv = setInterval(() => {
-      mi = (mi+1)%msgs.length;
-      const t=$('load-title'), s=$('load-sub');
-      if(t) t.textContent=msgs[mi][0];
-      if(s) s.textContent=msgs[mi][1];
-    }, 3000);
-    setTimeout(() => { clearInterval(iv); go('s-result'); }, 9000);
+      mi = (mi+1) % msgs.length;
+      const t = $('load-title'), s = $('load-sub');
+      if (t) t.textContent = msgs[mi][0];
+      if (s) s.textContent = msgs[mi][1];
+    }, 2500);
+
+    try {
+      // API orqali tahlil
+      const API = 'https://ruhiyat-production.up.railway.app';
+      const userData = (() => { try { return JSON.parse(localStorage.getItem('tvd_user') || '{}'); } catch { return {}; } })();
+
+      // Telefon localStorage dan
+      const phone = userData.phone || localStorage.getItem('tvd_phone') || '';
+
+      const res = await fetch(API + '/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...payload,
+          phone: phone,
+        }),
+        signal: AbortSignal.timeout(35000),
+      });
+
+      clearInterval(iv);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok && data.answer) {
+          S.rag_answer = data.answer;
+          if (data.analysis_id) S.analysis_id = data.analysis_id;
+        }
+      }
+    } catch (e) {
+      console.warn('API analyze xatolik:', e.message);
+      // Fallback — natija ekraniga o'tamiz, javob bo'lmaydi
+    }
+
+    clearInterval(iv);
+    go('s-result');
   });
 
   /* ── RESULT ── */
