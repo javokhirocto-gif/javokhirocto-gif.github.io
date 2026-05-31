@@ -778,18 +778,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
   setTimeout(async () => {
     try {
+      // 1. tvd_user dan tekshirish
       const saved = localStorage.getItem('tvd_user');
       if (saved) {
         const u = JSON.parse(saved);
         if (u && u.full_name) {
           S.reg = true;
           S.phone = u.phone || localStorage.getItem('tvd_phone') || '';
+          console.log('[TVD] User from localStorage:', u.full_name, 'phone:', S.phone);
           if (S.phone) await loadLastAnalysis();
           go('s-menu');
           return;
         }
       }
+
+      // 2. tvd_phone dan tekshirish (agar tvd_user yo'q bo'lsa)
+      const phone = localStorage.getItem('tvd_phone');
+      if (phone) {
+        console.log('[TVD] Checking by phone:', phone);
+        const res = await apiPost('/api/check-user', { phone });
+        if (res && res.ok && res.exists && res.user) {
+          const u = res.user;
+          S.reg = true;
+          S.phone = phone;
+          // tvd_user ni qayta saqlash
+          try { localStorage.setItem('tvd_user', JSON.stringify({...u, phone})); } catch {}
+          console.log('[TVD] User found by phone:', u.full_name);
+          await loadLastAnalysis();
+          go('s-menu');
+          return;
+        }
+      }
     } catch(e) { console.warn('[TVD] start error:', e); }
+    // Ro'yxatdan o'tish sahifasiga
     window.location.href = 'register.html';
   }, 100);
 });
