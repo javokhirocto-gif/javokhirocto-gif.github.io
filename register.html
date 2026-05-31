@@ -255,10 +255,14 @@ async function api(path, body) {
 // ── Saqlab qo'yish ────────────────────────────────────────────────────────────
 function saveUser(user) {
   try {
-    localStorage.setItem('tvd_phone', user.phone || phone);
+    const p = user.phone || phone || '';
+    localStorage.setItem('tvd_phone', p);
     localStorage.setItem('tvd_name', user.full_name || '');
-    localStorage.setItem('tvd_user', JSON.stringify(user));
-  } catch {}
+    localStorage.setItem('tvd_user', JSON.stringify({...user, phone: p}));
+    console.log('[register] Saved user:', user.full_name, 'phone:', p);
+  } catch(e) {
+    console.error('[register] localStorage error:', e);
+  }
 }
 
 function goApp() {
