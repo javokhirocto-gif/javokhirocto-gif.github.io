@@ -623,6 +623,16 @@ async function saveSession() {
     const is11Days = S.currentDayNum >= 11 && S.currentListenNum >= 1;
 
     if (isAllDone) {
+      // Analizni yopish — barcha alomatlar yo'qoldi
+      if (S.phone) {
+        apiPost('/api/analysis/close', { phone: S.phone }).then(() => {
+          // State ni tozalash
+          S.analysis = null;
+          S.ruqiyaLogs = [];
+          S.progress = null;
+          S.activeSymptoms = [];
+        });
+      }
       showFinal(
         "Tabriklaymiz!",
         "Belgilangan barcha alomatlar ro'yxatdan chiqarildi.\n\n" +
