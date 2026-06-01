@@ -745,6 +745,79 @@ function updOffline() {
   if (c && s && S.date && S.time) { s.textContent = S.date + ' — ' + S.time; c.style.display = 'block'; }
 }
 
+
+/* ── FORMAT ANALYSIS RESULT ─────────────────────────────────────────────── */
+function formatAnalysisResult(text) {
+  if (!text) return '<p style="color:#999">Tahlil natijasi yuklanmadi.</p>';
+
+  // Секции по маркерам
+  const SECTIONS = [
+    { marker: '🤲 KIRISH',              icon: '🤲', title: 'Kirish',              color: '#f0f4ff', border: '#b0c4f8' },
+    { marker: "🔍 MUMKIN BO'LGAN SABABLAR", icon: '🔍', title: "Mumkin bo'lgan sabablar", color: '#fff8ec', border: '#f5d98a' },
+    { marker: "🟠 Jinniy ta'sir ehtimoli",  icon: "🟠", title: "Jinniy ta'sir ehtimoli",  color: '#fff5f0', border: '#f5c09a', sub: true },
+    { marker: '🟡 Sehr, hasad yoki nazar ehtimoli', icon: '🟡', title: 'Sehr, hasad yoki nazar', color: '#fffbf0', border: '#f5e09a', sub: true },
+    { marker: '🟣 Ruhiy bosim',          icon: '🟣', title: 'Ruhiy bosim / stress',  color: '#f8f0ff', border: '#d4a0f0', sub: true },
+    { marker: '📊 UMUMIY XULOSA',        icon: '📊', title: 'Umumiy xulosa',        color: '#f0fff8', border: '#a0dcc8' },
+    { marker: '🏥 BIRINCHI TAVSIYA',     icon: '🏥', title: 'Birinchi tavsiya',     color: '#f0f8ff', border: '#90c8f0' },
+    { marker: "🎧 TASHRIF IMKONI BO'LMASA", icon: '🎧', title: "Tashrif imkoni bo'lmasa", color: '#f5f5f5', border: '#d0d0d0' },
+    { marker: '⚠️ ESLATMA',             icon: '⚠️', title: 'Eslatma',              color: '#fff9f0', border: '#f0c070' },
+  ];
+
+  let html = '';
+  let remaining = text.trim();
+
+  // Убираем разделители
+  remaining = remaining.replace(/─{5,}/g, '').trim();
+
+  // Парсим секции
+  for (let i = 0; i < SECTIONS.length; i++) {
+    const sec = SECTIONS[i];
+    const idx = remaining.indexOf(sec.marker);
+    if (idx === -1) continue;
+
+    // Текст до следующей секции
+    let endIdx = remaining.length;
+    for (let j = i + 1; j < SECTIONS.length; j++) {
+      const ni = remaining.indexOf(SECTIONS[j].marker, idx + sec.marker.length);
+      if (ni !== -1 && ni < endIdx) { endIdx = ni; break; }
+    }
+
+    const body = remaining.slice(idx + sec.marker.length, endIdx).trim();
+    if (!body) continue;
+
+    // Форматируем текст — bullet points
+    const formatted = body
+      .split("\n")
+      .filter(l => l.trim())
+      .map(l => {
+        const line = l.trim();
+        if (line.startsWith('\u2022') || line.startsWith('-') || line.startsWith('*')) {
+          return '<div style="padding:2px 0 2px 10px;border-left:2px solid ' + sec.border + ';margin:4px 0;font-size:.82rem">' + line.replace(/^[\u2022\-\*]\s*/, '') + '</div>';
+        }
+        if (line.startsWith('👉') || line.startsWith('→')) {
+          return '<div style="font-weight:700;font-size:.84rem;margin:6px 0">' + line + '</div>';
+        }
+        return '<p style="margin:5px 0;font-size:.82rem;line-height:1.6">' + line + '</p>';
+      })
+      .join('');
+
+    const padding = sec.sub ? '10px 12px' : '12px 14px';
+    const marginLeft = sec.sub ? 'margin-left:0;' : '';
+
+    html += '<div style="background:' + sec.color + ';border:1.5px solid ' + sec.border + ';border-radius:12px;padding:' + padding + ';margin-bottom:10px;' + marginLeft + '">' +
+      '<div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#666;margin-bottom:8px">' + sec.icon + ' ' + sec.title + '</div>' +
+      formatted +
+      '</div>';
+  }
+
+  // Если ничего не распарсилось — plain text
+  if (!html) {
+    html = '<div style="font-size:.84rem;line-height:1.7;white-space:pre-wrap">' + text + '</div>';
+  }
+
+  return html;
+}
+
 /* ═══════════════════════════════════════════
    DOMContentLoaded
 ═══════════════════════════════════════════ */
@@ -811,11 +884,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Result ekranini qurish
     const rb = $('result-body');
-    if (rb) {
-      rb.textContent = S.rag_answer || 'Tahlil natijasi yuklanmadi.';
-      rb.style.whiteSpace = 'pre-wrap';
-      rb.style.fontSize = '.82rem';
-    }
+    if (rb) rb.innerHTML = formatAnalysisResult(S.rag_answer);
     const rt = $('result-tags');
     if (rt) rt.innerHTML = all.map(s => '<span class="tag">' + s + '</span>').join('') || '<span class="tag">-</span>';
 
