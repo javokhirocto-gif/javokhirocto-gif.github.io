@@ -452,11 +452,25 @@ html, body {
   border-color: var(--black);
 }
 
-/* ── YES/NO equal buttons ─── */
+
 .btn-half {
   display: inline-block !important;
   width: calc(50% - 5px) !important;
   box-sizing: border-box !important;
   padding: 14px 0 !important;
   text-align: center !important;
+}
+
+/* ── EQUAL PAIR BUTTONS ───────────────────────────── */
+.btn-pair {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.btn-pair .btn {
+  width: 100% !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
 }
