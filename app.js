@@ -624,8 +624,10 @@ async function saveSession() {
 
     if (isAllDone) {
       showFinal(
-        "Barcha alomatlar yo'qoldi!",
-        "Allohga shukr!\n" + S.currentDayNum + "-kun, " + S.currentListenNum + "-marta tinglangandan so'ng barcha alomatlar yo'qoldi.\n\nAlloh taolo Sizi O'z rahmatida asrasin!",
+        "Tabriklaymiz!",
+        "Belgilangan barcha alomatlar ro'yxatdan chiqarildi.\n\n" +
+        S.currentDayNum + "-kun, " + S.currentListenNum + "-marta tinglashdan so'ng barcha alomatlar yaxshilandi.\n\n" +
+        "Alloh taolo shifo va baraka bersin! 🤲",
         ''
       );
     } else if (is11Days) {
@@ -800,6 +802,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* RUQIYA STEPS — event delegation (dynamic screens) */
   document.addEventListener('click', e => {
+    // data-goto universal handler
+    const gotoEl = e.target.closest('[data-goto]');
+    if (gotoEl && !e.target.classList.contains('tile')) { go(gotoEl.dataset.goto); return; }
+
     if (e.target.id === 'btn-to-kalima')    { buildKalima(); go('s-kalima'); }
     if (e.target.id === 'btn-to-sym-update') { buildSymRemove(); buildSymAdd(); go('s-after-listen'); }
     if (e.target.id === 'btn-start-analysis') { S.uyqu=new Set(); S.ongi=new Set(); S.xon=new Set(); go('s-uyqu'); }
