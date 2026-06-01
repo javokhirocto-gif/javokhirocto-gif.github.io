@@ -227,12 +227,20 @@ async function loadUserData() {
     S.ruqiyaLogs = res.logs || [];
     S.progress = res.progress || null;
     if (S.analysis) {
+      // Boshlang'ich alomatlar — tahlildan
       S.activeSymptoms = S.analysis.all_symptoms || [];
-      // Oxirgi logdan aktiv simptomlarni olish
+      // Oxirgi aktiv simptomlar loglardan (eng so'nggi to'liq log)
       if (S.ruqiyaLogs.length > 0) {
-        const last = S.ruqiyaLogs[S.ruqiyaLogs.length - 1];
-        if (last.active_symptoms && last.active_symptoms.length > 0) {
-          S.activeSymptoms = last.active_symptoms;
+        // Eng so'nggi active_symptoms ni topish (orqadan)
+        for (let i = S.ruqiyaLogs.length - 1; i >= 0; i--) {
+          const log = S.ruqiyaLogs[i];
+          const act = Array.isArray(log.active_symptoms) ? log.active_symptoms : [];
+          // active_symptoms saqlangan log — shu holat joriy
+          // removed_symptoms bor bo'lsa bu log yakunlangan
+          if (Array.isArray(log.removed_symptoms)) {
+            S.activeSymptoms = act;
+            break;
+          }
         }
       }
     }
@@ -580,10 +588,18 @@ function buildSymAddCategory(cat) {
 async function saveSession() {
   const active = S.activeSymptoms || [];
   const removed = active.filter((_, i) => S.removedSymptoms.has(i));
-  const added = [...UYQU, ...ONGI, ...XON]
+
+  // Qo'shilgan alomatlar — barcha kategoriyadan
+  const addedFromCats = [...UYQU, ...ONGI, ...XON]
     .filter(([, key]) => S.addedSymptoms.has(key))
     .map(([lbl]) => lbl);
+  // Ruqiya va kalima kategoriyasidan qo'shilganlar (key = lbl)
+  const addedFromRuqiya = RUQIYA_SYMPTOMS.filter(s => S.addedSymptoms.has(s));
+  const addedFromKalima = KALIMALAR.filter(k => S.addedSymptoms.has(k));
+  const added = [...addedFromCats, ...addedFromRuqiya, ...addedFromKalima];
+
   const newActive = active.filter((_, i) => !S.removedSymptoms.has(i)).concat(added);
+  console.log('[saveSession] active:', active.length, 'removed:', removed.length, 'added:', added.length, 'newActive:', newActive.length);
 
   const btn = $('btn-save-session');
   if (btn) { btn.disabled = true; btn.textContent = 'Saqlanmoqda...'; }
@@ -825,10 +841,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.id === 'btn-go-holat')     go('s-holat');
     // Yangi alomat: ha/yo'q
     if (e.target.id === 'btn-new-sym-yes') {
+      $('btn-new-sym-yes').className = 'btn btn-black';
+      $('btn-new-sym-no').className  = 'btn btn-outline';
+      $('btn-new-sym-yes').style.flex = '1'; $('btn-new-sym-yes').style.padding = '14px';
+      $('btn-new-sym-no').style.flex  = '1'; $('btn-new-sym-no').style.padding  = '14px';
       const sec = $('new-sym-section');
       if (sec) sec.style.display = 'block';
     }
     if (e.target.id === 'btn-new-sym-no') {
+      $('btn-new-sym-no').className  = 'btn btn-black';
+      $('btn-new-sym-yes').className = 'btn btn-outline';
+      $('btn-new-sym-no').style.flex  = '1'; $('btn-new-sym-no').style.padding  = '14px';
+      $('btn-new-sym-yes').style.flex = '1'; $('btn-new-sym-yes').style.padding = '14px';
       const sec = $('new-sym-section');
       if (sec) sec.style.display = 'none';
       S.addedSymptoms = new Set();
