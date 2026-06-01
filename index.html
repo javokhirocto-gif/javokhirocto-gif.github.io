@@ -163,18 +163,6 @@
       <div class="ph-sub" id="listen-label">1-kun · 1-marta</div>
     </div>
 
-    <!-- Instruksiya -->
-    <div class="res-card" style="margin-bottom:14px">
-      <div class="res-label">Tinglash tartibi</div>
-      <div class="res-text" style="font-size:.84rem;line-height:1.7">
-        1. Tahorat oling, 2 rakat hojat namozini o'qing<br>
-        2. Tinch xonada, ko'zni yumib o'tiring<br>
-        3. Naushnik yoki kolonka orqali eshiting<br>
-        <br>
-        ⚠️ Terlash, titroq, bosh og'rishi — shifo jarayoni boshlanganidan darak
-      </div>
-    </div>
-
     <!-- Audio pleer -->
     <div class="audio-card">
       <div class="audio-title">🎵 Ruqiya audiosi</div>
@@ -195,7 +183,7 @@
         Audio tinglab bo'lgach pastdagi tugmani bosing
       </div>
       <button class="btn btn-black" id="btn-listened" style="margin-bottom:32px">
-        ✅ Proslushaldim
+        ✅ Ruqiyani eshitdim
       </button>
     </div>
   </div>
@@ -239,11 +227,24 @@
     </div>
     <div id="sym-remove-list" class="sym-list" style="margin-bottom:20px"></div>
 
-    <div class="section-title" style="margin-bottom:8px">Yangi alomat paydo bo'ldimi? (ixtiyoriy)</div>
-    <div class="notice" style="background:#fff8ec;border:1px solid #fad890;border-radius:10px;padding:10px;font-size:.8rem;color:#9a5800;margin-bottom:10px">
-      Yangi paydo bo'lgan alomatlarni qo'shing
+    <div class="section-title" style="margin-bottom:8px">Yangi alomat paydo bo'ldimi?</div>
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <button class="btn btn-outline" id="btn-new-sym-no"  style="flex:1">Yo'q</button>
+      <button class="btn btn-black"   id="btn-new-sym-yes" style="flex:1">Ha</button>
     </div>
-    <div id="sym-add-section" class="sym-list" style="margin-bottom:16px;max-height:240px;overflow-y:auto"></div>
+
+    <!-- Ha desa ko'rsatiladi -->
+    <div id="new-sym-section" style="display:none">
+      <div class="section-title" style="margin-bottom:8px">Qaysi turda yangi alomat?</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+        <button class="btn btn-outline sym-cat-btn" data-cat="uyqu"   id="cat-uyqu">😴 Uyqudagi alomatlar</button>
+        <button class="btn btn-outline sym-cat-btn" data-cat="ongi"   id="cat-ongi">🌞 O'ngidagi alomatlar</button>
+        <button class="btn btn-outline sym-cat-btn" data-cat="xon"    id="cat-xon">🏠 Xonadondagi alomatlar</button>
+        <button class="btn btn-outline sym-cat-btn" data-cat="ruqiya" id="cat-ruqiya">🎧 Ruqiya paytidagi alomatlar</button>
+        <button class="btn btn-outline sym-cat-btn" data-cat="kalima" id="cat-kalima">📿 Kalima ta'siri</button>
+      </div>
+      <div id="sym-add-section" class="sym-list" style="margin-bottom:16px;max-height:240px;overflow-y:auto;display:none"></div>
+    </div>
 
     <button class="btn btn-black" id="btn-save-session" style="margin-bottom:32px">Saqlash →</button>
   </div>
