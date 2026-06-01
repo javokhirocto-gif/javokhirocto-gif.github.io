@@ -69,6 +69,35 @@ const FEELINGS = [
   {id:'tinchlik',label:'🕊️ Tinchlik his qildim'},
 ];
 
+const RUQIYA_SYMPTOMS = [
+  "Ko'p achish", "Kekirish", "Ko'z yoshlanishi",
+  "Yuz, jag' tortilishi", "Tananing bir tomonida uyushish, tortilish",
+  "Bo'yin og'rig'i", "Qorin og'rig'i", "O'pka og'rig'i",
+  "Qo'l og'rig'i", "Yelka, kurak og'rig'i",
+  "Umurtqa og'riq to'lqin bo'lib kelishi", "Yurak sanchishi",
+  "Qovuq, bel og'rig'i", "Oyoq og'rig'i", "Tomog'ga tiqilish",
+  "Og'riq kuchayib yurishi", "Qaltiroq turishi",
+  "Sovuqotish, junjikih, qizib ketish", "Yig'lab yuborish",
+  "Kulgi kelishi", "Uyqusi kelishi", "G'azab kelishi",
+  "'Domlaning kuchi yetmaydi' degan fikr kelishi",
+  "Allohga ishonmaslik fikri kelishi", "Xoch (krest) ko'zga ko'rinishi",
+];
+
+const KALIMALAR = [
+  "Sehr deganida", "Er-xotinni ajratish",
+  "Farzand bo'lmasligi uchun", "Kasal bo'lishi uchun",
+  "O'limga qilingan", "Aldab ozdirish", "Hasad",
+  "Ishi yo'li", "Baxt bo'lmasligi", "Vasvasa",
+  "O'z joniga qasd", "Qabrga ko'milgan", "Qabriston tuprog'i",
+  "Mayyit suvi", "Kafanlik", "Qo'g'irchoq", "Rasm",
+  "Qulf zanjir", "Tugunlar", "Qon va najasat",
+  "Ism harf raqam", "Jinn deganida", "Marid deganida",
+  "Yahudiy", "Kofir", "Azob", "O'lim",
+  "Jannat kalimlari", "Iblis deganida",
+  "Zino qilg'usi deganida", "Nasroniy", "Jahannam",
+  "Qiyomat", "Hazo",
+];
+
 /* ── STATE ─────────────────────────────────────────────────────────────── */
 const S = {
   phone: '',
@@ -92,6 +121,8 @@ const S = {
   // Oflayn
   date: '', time: '',
   loadingData: false,
+  selectedRuqiyaSyms: new Set(),
+  selectedKalimalar: new Set(),
 };
 
 /* ── HELPERS ────────────────────────────────────────────────────────────── */
@@ -139,7 +170,9 @@ const BACK = {
   's-result':  's-menu',
   's-ruqiya':  's-menu',
   's-listen':  's-ruqiya',
-  's-after-listen': 's-listen',
+  's-ruqiya-syms':  's-listen',
+  's-kalima':       's-ruqiya-syms',
+  's-after-listen': 's-kalima',
   's-offline': 's-menu',
   's-info':    's-menu',
   's-info-detail': 's-info',
@@ -148,7 +181,7 @@ const BACK = {
 const PROGRESS = {
   's-menu':0, 's-holat':5, 's-uyqu':20, 's-ongi':38, 's-xon':56,
   's-complaint':72, 's-loading':78, 's-result':85,
-  's-ruqiya':10, 's-listen':50, 's-after-listen':70, 's-sym-update':85,
+  's-ruqiya':10, 's-listen':40, 's-ruqiya-syms':55, 's-kalima':70, 's-after-listen':85,
   's-offline':30, 's-info':5, 's-info-detail':5, 's-final':100,
 };
 let cur = '';
@@ -437,30 +470,42 @@ function initListenAudio() {
 }
 
 /* ── AFTER LISTEN ───────────────────────────────────────────────────────── */
-function buildAfterListen() {
-  // Label yangilash
-  const lbl = $('after-listen-label');
+function buildRuqiyaSyms() {
+  // Label
+  const lbl = $('ruqiya-syms-label');
   if (lbl) lbl.textContent = S.currentDayNum + '-kun ' + S.currentListenNum + '-marta';
-
-  // His-tuyg'ular
-  const c = $('feelings-list'); if (!c) return;
+  S.selectedRuqiyaSyms = new Set();
+  const c = $('ruqiya-syms-list'); if (!c) return;
   c.innerHTML = '';
-  S.selectedFeelings = new Set();
-  FEELINGS.forEach(f => {
+  RUQIYA_SYMPTOMS.forEach((sym, i) => {
     const div = document.createElement('div');
-    div.className = 'feeling-item';
-    div.textContent = f.label;
+    div.className = 'sym-item';
+    div.innerHTML = '<div class="sym-box"><svg class="sym-check" viewBox="0 0 14 14" fill="none"><polyline points="2,7 5.5,10.5 12,3.5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="sym-text">' + sym + '</span>';
     div.addEventListener('click', () => {
-      if (S.selectedFeelings.has(f.id)) {
-        S.selectedFeelings.delete(f.id); div.classList.remove('active');
-      } else {
-        S.selectedFeelings.add(f.id); div.classList.add('active');
-      }
+      S.selectedRuqiyaSyms.has(i) ? (S.selectedRuqiyaSyms.delete(i), div.classList.remove('checked'))
+                                   : (S.selectedRuqiyaSyms.add(i),    div.classList.add('checked'));
     });
     c.appendChild(div);
   });
+}
 
-  // Simptomlarni qurish (remove + add)
+function buildKalima() {
+  S.selectedKalimalar = new Set();
+  const c = $('kalima-list'); if (!c) return;
+  c.innerHTML = '';
+  KALIMALAR.forEach((kal, i) => {
+    const div = document.createElement('div');
+    div.className = 'sym-item';
+    div.innerHTML = '<div class="sym-box"><svg class="sym-check" viewBox="0 0 14 14" fill="none"><polyline points="2,7 5.5,10.5 12,3.5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="sym-text">' + kal + '</span>';
+    div.addEventListener('click', () => {
+      S.selectedKalimalar.has(i) ? (S.selectedKalimalar.delete(i), div.classList.remove('checked'))
+                                  : (S.selectedKalimalar.add(i),    div.classList.add('checked'));
+    });
+    c.appendChild(div);
+  });
+}
+
+function buildAfterListen() {
   buildSymRemove();
   buildSymAdd();
 }
@@ -524,11 +569,18 @@ async function saveSession() {
   const btn = $('btn-save-session');
   if (btn) { btn.disabled = true; btn.textContent = 'Saqlanmoqda...'; }
 
+  const ruqiyaSyms = RUQIYA_SYMPTOMS.filter((_, i) => S.selectedRuqiyaSyms.has(i));
+  const kalimalar = KALIMALAR.filter((_, i) => S.selectedKalimalar.has(i));
+
   const res = await apiPost('/api/ruqiya/log', {
     phone: S.phone,
     day_num: S.currentDayNum,
     listen_num: S.currentListenNum,
     feelings: [...S.selectedFeelings],
+    ayat_reactions: {
+      ruqiya_symptoms: ruqiyaSyms,
+      kalimalar: kalimalar,
+    },
     active_symptoms: newActive,
     removed_symptoms: removed,
     added_symptoms: added,
@@ -728,7 +780,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btn-to-offline')?.addEventListener('click', () => go('s-offline'));
 
   /* LISTEN — proslushaldim */
-  $('btn-listened')?.addEventListener('click', () => go('s-after-listen'));
+  $('btn-listened')?.addEventListener('click', () => { buildRuqiyaSyms(); go('s-ruqiya-syms'); });
 
   /* s-after-listen da saqlash tugmasi to'g'ridan ishlatiladi */
 
