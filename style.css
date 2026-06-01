@@ -451,3 +451,12 @@ html, body {
   color: #fff;
   border-color: var(--black);
 }
+
+/* ── YES/NO equal buttons ─── */
+.btn-half {
+  display: inline-block !important;
+  width: calc(50% - 5px) !important;
+  box-sizing: border-box !important;
+  padding: 14px 0 !important;
+  text-align: center !important;
+}
