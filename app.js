@@ -91,6 +91,7 @@ const S = {
 
   // Oflayn
   date: '', time: '',
+  loadingData: false,
 };
 
 /* ── HELPERS ────────────────────────────────────────────────────────────── */
@@ -139,7 +140,6 @@ const BACK = {
   's-ruqiya':  's-menu',
   's-listen':  's-ruqiya',
   's-after-listen': 's-listen',
-  's-sym-update':   's-after-listen',
   's-offline': 's-menu',
   's-info':    's-menu',
   's-info-detail': 's-info',
@@ -185,7 +185,9 @@ function showFinal(title, body, extra) {
 /* ── LOAD ON START ──────────────────────────────────────────────────────── */
 async function loadUserData() {
   if (!S.phone) return;
+  S.loadingData = true;
   const res = await apiGet('/api/analysis/active?phone=' + encodeURIComponent(S.phone));
+  console.log('[loadUserData] phone:', S.phone, 'res:', JSON.stringify(res));
   if (res && res.ok) {
     S.analysis = res.analysis || null;
     S.ruqiyaLogs = res.logs || [];
@@ -201,11 +203,20 @@ async function loadUserData() {
       }
     }
   }
+  S.loadingData = false;
+  // Agar holat ekrani ochiq bo'lsa, yangilash
+  if (typeof cur !== 'undefined' && cur === 's-holat') buildHolat();
 }
 
 /* ── BUILD: HOLAT SCREEN ────────────────────────────────────────────────── */
 function buildHolat() {
   const c = $('holat-content'); if (!c) return;
+
+  // Agar hali yuklanyapti bo'lsa
+  if (S.loadingData) {
+    c.innerHTML = '<div style="text-align:center;padding:40px 0;color:#999">Yuklanmoqda...</div>';
+    return;
+  }
 
   if (!S.analysis) {
     // Tahlil yo'q — yangi tahlil qilish
@@ -427,6 +438,11 @@ function initListenAudio() {
 
 /* ── AFTER LISTEN ───────────────────────────────────────────────────────── */
 function buildAfterListen() {
+  // Label yangilash
+  const lbl = $('after-listen-label');
+  if (lbl) lbl.textContent = S.currentDayNum + '-kun ' + S.currentListenNum + '-marta';
+
+  // His-tuyg'ular
   const c = $('feelings-list'); if (!c) return;
   c.innerHTML = '';
   S.selectedFeelings = new Set();
@@ -443,63 +459,58 @@ function buildAfterListen() {
     });
     c.appendChild(div);
   });
+
+  // Simptomlarni qurish (remove + add)
+  buildSymRemove();
+  buildSymAdd();
 }
 
-/* ── SYMPTOM UPDATE ─────────────────────────────────────────────────────── */
-function buildSymUpdate() {
+function buildSymRemove() {
   const active = S.activeSymptoms || [];
-  const allSym = S.analysis ? (S.analysis.all_symptoms || []) : [];
-
-  // 1. Aktiv simptomlar — olib tashlash uchun
   const removeList = $('sym-remove-list');
-  if (removeList) {
-    removeList.innerHTML = '';
-    S.removedSymptoms = new Set();
-    if (active.length === 0) {
-      removeList.innerHTML = '<div style="color:#999;font-size:.84rem">Aktiv alomatlar yo\'q</div>';
-    } else {
-      active.forEach((sym, i) => {
-        const div = document.createElement('div');
-        div.className = 'sym-item';
-        div.innerHTML = '<div class="sym-box"><svg class="sym-check" viewBox="0 0 14 14" fill="none"><polyline points="2,7 5.5,10.5 12,3.5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="sym-text">' + sym + '</span>';
-        div.addEventListener('click', () => {
-          if (S.removedSymptoms.has(i)) {
-            S.removedSymptoms.delete(i); div.classList.remove('checked');
-          } else {
-            S.removedSymptoms.add(i); div.classList.add('checked');
-          }
-        });
-        removeList.appendChild(div);
-      });
-    }
+  if (!removeList) return;
+  removeList.innerHTML = '';
+  S.removedSymptoms = new Set();
+  if (active.length === 0) {
+    removeList.innerHTML = '<div style="color:#999;font-size:.84rem;padding:8px 0">Aktiv alomatlar yoq</div>';
+    return;
   }
-
-  // 2. Yangi simptom qo'shish uchun — barcha kategoriyalar
-  const addSec = $('sym-add-section');
-  if (addSec) {
-    addSec.innerHTML = '';
-    S.addedSymptoms = new Set();
-    // Aktiv bo'lmagan simptomlarni ko'rsat
-    const notActive = [...UYQU, ...ONGI, ...XON].filter(([lbl]) => !active.includes(lbl));
-    if (notActive.length === 0) {
-      addSec.innerHTML = '<div style="color:#999;font-size:.84rem">Barcha alomatlar aktiv</div>';
-    } else {
-      notActive.forEach(([lbl, key]) => {
-        const div = document.createElement('div');
-        div.className = 'sym-item';
-        div.innerHTML = '<div class="sym-box"><svg class="sym-check" viewBox="0 0 14 14" fill="none"><polyline points="2,7 5.5,10.5 12,3.5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="sym-text">' + lbl + '</span>';
-        div.addEventListener('click', () => {
-          if (S.addedSymptoms.has(key)) {
-            S.addedSymptoms.delete(key); div.classList.remove('checked');
-          } else {
-            S.addedSymptoms.add(key); div.classList.add('checked');
-          }
-        });
-        addSec.appendChild(div);
-      });
-    }
-  }
+  active.forEach((sym, i) => {
+    const div = document.createElement('div');
+    div.className = 'sym-item';
+    div.innerHTML = '<div class="sym-box"><svg class="sym-check" viewBox="0 0 14 14" fill="none"><polyline points="2,7 5.5,10.5 12,3.5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="sym-text">' + sym + '</span>';
+    div.addEventListener('click', () => {
+      S.removedSymptoms.has(i) ? (S.removedSymptoms.delete(i), div.classList.remove('checked'))
+                                : (S.removedSymptoms.add(i),   div.classList.add('checked'));
+    });
+    removeList.appendChild(div);
+  });
 }
+
+function buildSymAdd() {
+  const active = S.activeSymptoms || [];
+  const addSec = $('sym-add-section');
+  if (!addSec) return;
+  addSec.innerHTML = '';
+  S.addedSymptoms = new Set();
+  const notActive = [...UYQU, ...ONGI, ...XON].filter(([lbl]) => !active.includes(lbl));
+  if (notActive.length === 0) {
+    addSec.innerHTML = '<div style="color:#999;font-size:.84rem;padding:8px 0">Barcha alomatlar royxatda bor</div>';
+    return;
+  }
+  notActive.forEach(([lbl, key]) => {
+    const div = document.createElement('div');
+    div.className = 'sym-item';
+    div.innerHTML = '<div class="sym-box"><svg class="sym-check" viewBox="0 0 14 14" fill="none"><polyline points="2,7 5.5,10.5 12,3.5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="sym-text">' + lbl + '</span>';
+    div.addEventListener('click', () => {
+      S.addedSymptoms.has(key) ? (S.addedSymptoms.delete(key), div.classList.remove('checked'))
+                                : (S.addedSymptoms.add(key),   div.classList.add('checked'));
+    });
+    addSec.appendChild(div);
+  });
+}
+
+
 
 /* ── SAVE SESSION ───────────────────────────────────────────────────────── */
 async function saveSession() {
@@ -719,8 +730,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /* LISTEN — proslushaldim */
   $('btn-listened')?.addEventListener('click', () => go('s-after-listen'));
 
-  /* AFTER LISTEN — davom etish */
-  $('btn-to-sym-update')?.addEventListener('click', () => go('s-sym-update'));
+  /* s-after-listen da saqlash tugmasi to'g'ridan ishlatiladi */
 
   /* SAVE SESSION */
   $('btn-save-session')?.addEventListener('click', saveSession);
