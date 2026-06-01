@@ -200,33 +200,50 @@
     </div>
   </div>
 
-  <!-- ════ AFTER LISTEN — his + alomatlar ════ -->
+  <!-- ════ STEP 1: Ruqiya paytidagi alomatlar ════ -->
+  <div id="s-ruqiya-syms" class="screen">
+    <div class="ph">
+      <div class="ph-title">Ruqiya paytidagi alomatlar</div>
+      <div class="ph-sub" id="ruqiya-syms-label">1-kun · 1-marta</div>
+    </div>
+    <div class="notice" style="background:#f7f7f7;border:1.5px solid #e0e0e0;border-radius:10px;padding:10px;font-size:.8rem;color:#666;margin-bottom:14px">
+      Tinglash paytida qaysi alomatlarni his qildingiz? (belgilang)
+    </div>
+    <div id="ruqiya-syms-list" class="sym-list" style="margin-bottom:16px"></div>
+    <button class="btn btn-black" id="btn-to-kalima" style="margin-bottom:32px">Davom etish →</button>
+  </div>
+
+  <!-- ════ STEP 2: Qaysi kalimada ta'sirlandi ════ -->
+  <div id="s-kalima" class="screen">
+    <div class="ph">
+      <div class="ph-title">Qaysi kalimada ta'sirlandi?</div>
+      <div class="ph-sub">Mos keladiganlarini belgilang</div>
+    </div>
+    <div class="notice" style="background:#f7f7f7;border:1.5px solid #e0e0e0;border-radius:10px;padding:10px;font-size:.8rem;color:#666;margin-bottom:14px">
+      Bir yoki bir nechta tanlash mumkin
+    </div>
+    <div id="kalima-list" class="sym-list" style="margin-bottom:16px"></div>
+    <button class="btn btn-black" id="btn-to-sym-update" style="margin-bottom:32px">Davom etish →</button>
+  </div>
+
+  <!-- ════ STEP 3: Asosiy alomatlarni yangilash ════ -->
   <div id="s-after-listen" class="screen">
     <div class="ph">
-      <div class="ph-title">Tinglash yakunlandi</div>
-      <div class="ph-sub" id="after-listen-label">1-kun · 1-marta</div>
+      <div class="ph-title">Alomatlarni yangilash</div>
+      <div class="ph-sub">Holatingizdagi o'zgarishlar</div>
     </div>
 
-    <!-- His-tuyg'ular -->
-    <div class="section-title" style="margin-bottom:8px">Tinglash paytida qanday his qildingiz?</div>
-    <div class="notice" style="background:#f7f7f7;border:1.5px solid #e0e0e0;border-radius:10px;padding:10px;font-size:.8rem;color:#666;margin-bottom:10px">
-      Birni yoki bir nechtasini belgilang
-    </div>
-    <div id="feelings-list" class="feelings-grid" style="margin-bottom:20px"></div>
-
-    <!-- Симптомы — убрать исчезшие -->
-    <div class="section-title" style="margin-bottom:8px">Qaysi alomatlar yaxshilandi yoki yo'qoldi?</div>
+    <div class="section-title" style="margin-bottom:8px">Qaysi alomatlar yo'qoldi yoki kamaydi?</div>
     <div class="notice" style="background:#e6f8f3;border:1px solid #a0dcc8;border-radius:10px;padding:10px;font-size:.8rem;color:#006b50;margin-bottom:10px">
       ✅ Yo'qolgan alomatlarni belgilang
     </div>
     <div id="sym-remove-list" class="sym-list" style="margin-bottom:20px"></div>
 
-    <!-- Симптомы — добавить новые -->
     <div class="section-title" style="margin-bottom:8px">Yangi alomat paydo bo'ldimi? (ixtiyoriy)</div>
     <div class="notice" style="background:#fff8ec;border:1px solid #fad890;border-radius:10px;padding:10px;font-size:.8rem;color:#9a5800;margin-bottom:10px">
       Yangi paydo bo'lgan alomatlarni qo'shing
     </div>
-    <div id="sym-add-section" class="sym-list" style="margin-bottom:16px;max-height:220px;overflow-y:auto"></div>
+    <div id="sym-add-section" class="sym-list" style="margin-bottom:16px;max-height:240px;overflow-y:auto"></div>
 
     <button class="btn btn-black" id="btn-save-session" style="margin-bottom:32px">Saqlash →</button>
   </div>
