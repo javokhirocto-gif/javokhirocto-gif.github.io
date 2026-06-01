@@ -147,27 +147,38 @@
     <button class="btn btn-outline" id="btn-to-offline" style="margin-bottom:32px">📅 Oflayn tashrif yozish</button>
   </div>
 
-  <!-- ════ RUQIYA MENU ════ -->
+  <!-- ════ RUQIYA — asosiy ekran ════ -->
   <div id="s-ruqiya" class="screen">
     <div class="ph">
       <div class="ph-title">Onlayn ruqiya</div>
-      <div class="ph-sub">11 kunlik tinglash kursi</div>
+      <div class="ph-sub" id="ruqiya-day-label">11 kunlik tinglash kursi</div>
     </div>
     <div id="ruqiya-content"></div>
   </div>
 
-  <!-- ════ LISTEN ════ -->
+  <!-- ════ LISTEN — instruksiya + audio + tugma ════ -->
   <div id="s-listen" class="screen">
     <div class="ph">
       <div class="ph-title">Ruqiya tinglash</div>
       <div class="ph-sub" id="listen-label">1-kun · 1-marta</div>
     </div>
-    <div class="notice n-info" style="margin-bottom:16px">
-      🤲 Tahorat oling, tinch xonada ko'zni yumib o'tiring
+
+    <!-- Instruksiya -->
+    <div class="res-card" style="margin-bottom:14px">
+      <div class="res-label">Tinglash tartibi</div>
+      <div class="res-text" style="font-size:.84rem;line-height:1.7">
+        1. Tahorat oling, 2 rakat hojat namozini o'qing<br>
+        2. Tinch xonada, ko'zni yumib o'tiring<br>
+        3. Naushnik yoki kolonka orqali eshiting<br>
+        <br>
+        ⚠️ Terlash, titroq, bosh og'rishi — shifo jarayoni boshlanganidan darak
+      </div>
     </div>
+
+    <!-- Audio pleer -->
     <div class="audio-card">
       <div class="audio-title">🎵 Ruqiya audiosi</div>
-      <div class="audio-bar" id="listen-bar">
+      <div class="audio-bar" id="listen-bar" style="cursor:pointer">
         <div class="audio-fill" id="listen-fill"></div>
       </div>
       <div class="audio-time" id="listen-time">0:00 / 0:00</div>
@@ -177,37 +188,45 @@
       </button>
     </div>
     <audio id="listen-audio" style="display:none"></audio>
-    <div id="listen-after" style="display:none;margin-top:16px">
-      <div class="notice n-info" style="margin-bottom:12px">✅ Tinglash tugadi!</div>
-      <button class="btn btn-black" id="btn-listened" style="margin-bottom:32px">Proslushaldim →</button>
+
+    <!-- Proslushaldim tugmasi — doim ko'rinadi -->
+    <div style="margin-top:16px">
+      <div id="listen-not-done" class="notice" style="background:#f7f7f7;border:1.5px solid #e0e0e0;border-radius:10px;padding:12px;font-size:.82rem;color:#666;margin-bottom:12px">
+        Audio tinglab bo'lgach pastdagi tugmani bosing
+      </div>
+      <button class="btn btn-black" id="btn-listened" style="margin-bottom:32px">
+        ✅ Proslushaldim
+      </button>
     </div>
   </div>
 
-  <!-- ════ AFTER LISTEN — HIS TUYG'ULAR ════ -->
+  <!-- ════ AFTER LISTEN — his + alomatlar ════ -->
   <div id="s-after-listen" class="screen">
     <div class="ph">
-      <div class="ph-title">Tinglash paytida</div>
-      <div class="ph-sub">Qanday his qildingiz?</div>
+      <div class="ph-title">Tinglash yakunlandi</div>
+      <div class="ph-sub" id="after-listen-label">1-kun · 1-marta</div>
     </div>
-    <div class="notice n-info" style="margin-bottom:14px">
+
+    <!-- His-tuyg'ular -->
+    <div class="section-title" style="margin-bottom:8px">Tinglash paytida qanday his qildingiz?</div>
+    <div class="notice" style="background:#f7f7f7;border:1.5px solid #e0e0e0;border-radius:10px;padding:10px;font-size:.8rem;color:#666;margin-bottom:10px">
       Birni yoki bir nechtasini belgilang
     </div>
-    <div id="feelings-list" class="feelings-grid"></div>
-    <button class="btn btn-black" id="btn-to-sym-update" style="margin-top:16px;margin-bottom:32px">Davom etish →</button>
-  </div>
+    <div id="feelings-list" class="feelings-grid" style="margin-bottom:20px"></div>
 
-  <!-- ════ SYMPTOM UPDATE ════ -->
-  <div id="s-sym-update" class="screen">
-    <div class="ph">
-      <div class="ph-title">Alomatlarni yangilash</div>
-      <div class="ph-sub">Qaysi alomatlar yaxshilandi yoki o'zgardi?</div>
+    <!-- Симптомы — убрать исчезшие -->
+    <div class="section-title" style="margin-bottom:8px">Qaysi alomatlar yaxshilandi yoki yo'qoldi?</div>
+    <div class="notice" style="background:#e6f8f3;border:1px solid #a0dcc8;border-radius:10px;padding:10px;font-size:.8rem;color:#006b50;margin-bottom:10px">
+      ✅ Yo'qolgan alomatlarni belgilang
     </div>
-
-    <div class="section-title" style="margin-bottom:8px">Qaysilar yo'qoldi? (belgilang)</div>
     <div id="sym-remove-list" class="sym-list" style="margin-bottom:20px"></div>
 
-    <div class="section-title" style="margin-bottom:8px">Yangi alomat qo'shish (ixtiyoriy)</div>
-    <div id="sym-add-section" class="sym-list" style="margin-bottom:16px;max-height:200px;overflow-y:auto"></div>
+    <!-- Симптомы — добавить новые -->
+    <div class="section-title" style="margin-bottom:8px">Yangi alomat paydo bo'ldimi? (ixtiyoriy)</div>
+    <div class="notice" style="background:#fff8ec;border:1px solid #fad890;border-radius:10px;padding:10px;font-size:.8rem;color:#9a5800;margin-bottom:10px">
+      Yangi paydo bo'lgan alomatlarni qo'shing
+    </div>
+    <div id="sym-add-section" class="sym-list" style="margin-bottom:16px;max-height:220px;overflow-y:auto"></div>
 
     <button class="btn btn-black" id="btn-save-session" style="margin-bottom:32px">Saqlash →</button>
   </div>
@@ -242,18 +261,15 @@
       <div class="ph-title">Ma'lumotlar</div>
     </div>
     <div class="info-row" data-info="domla">
-      <div class="info-row-icon">👳</div>
-      <div class="info-row-text">Sayfulloh domla haqida</div>
+      <div class="info-row-label">👳 Sayfulloh domla haqida</div>
       <div class="info-row-arrow">›</div>
     </div>
     <div class="info-row" data-info="markaz">
-      <div class="info-row-icon">🏥</div>
-      <div class="info-row-text">Markaz haqida</div>
+      <div class="info-row-label">🏥 Markaz haqida</div>
       <div class="info-row-arrow">›</div>
     </div>
     <div class="info-row" data-info="manzil">
-      <div class="info-row-icon">📍</div>
-      <div class="info-row-text">Manzil</div>
+      <div class="info-row-label">📍 Manzil</div>
       <div class="info-row-arrow">›</div>
     </div>
   </div>
