@@ -122,6 +122,7 @@ const S = {
   date: '', time: '',
   loadingData: false,
   selectedRuqiyaSyms: new Set(),
+  selectedAddCat: null,
   selectedKalimalar: new Set(),
 };
 
@@ -350,11 +351,27 @@ function buildRuqiyaMenu() {
   }
 
   const logs = S.ruqiyaLogs || [];
-  const day = S.progress ? (S.progress.max_day || 0) : 0;
-  const todayLogs = logs.filter(l => l.day_num === day + 1);
-  const nextDay = day + 1;
-  const nextListen = todayLogs.length + 1;
-  const canListenToday = todayLogs.length < 2; // Bir kunda max 2 marta
+  const progress = S.progress || {max_day:0, total_listens:0};
+
+  // Joriy kun: oxirgi log kunidan hisoblash
+  // Har kun 2 marta tinglash kerak
+  // Agar bugungi kun 2 marta tinglansa → ertaga o'tish
+  let currentDay = progress.max_day || 0;
+  const todayLogs = logs.filter(l => l.day_num === currentDay);
+  const todayCount = todayLogs.length;
+
+  let nextDay, nextListen;
+  if (currentDay === 0) {
+    // Birinchi marta
+    nextDay = 1; nextListen = 1;
+  } else if (todayCount < 2) {
+    // Bugun yana tinglash mumkin
+    nextDay = currentDay; nextListen = todayCount + 1;
+  } else {
+    // Bugun 2 marta bo'ldi — ertaga
+    nextDay = currentDay + 1; nextListen = 1;
+  }
+  const canListen = nextDay <= 11;
 
   let html = '';
 
@@ -376,16 +393,11 @@ function buildRuqiyaMenu() {
     '⚠️ Terlash, titroq — shifo jarayoni boshlanganidan darak' +
     '</div></div>';
 
-  if (canListenToday) {
+  if (canListen) {
     html += '<button class="btn btn-black" id="btn-start-listen" style="margin-bottom:8px">' +
-      '▶ ' + nextDay + '-kun · ' + nextListen + '-marta tinglash</button>';
+      '▶ ' + nextDay + '-kun · ' + nextListen + '-tinglash</button>';
   } else {
-    html += '<div class="notice n-info" style="margin-bottom:14px">' +
-      '✅ Bugun (' + day + '-kun) 2 marta tinglash bajarildi!</div>';
-    if (day < 11) {
-      html += '<button class="btn btn-outline" id="btn-start-listen" style="margin-bottom:8px">' +
-        '▶ ' + (nextDay) + '-kun · 1-marta tinglash</button>';
-    }
+    html += '<div class="notice n-info">✅ 11 kunlik kurs yakunlandi!</div>';
   }
 
   // Tarix
@@ -526,17 +538,39 @@ function buildSymRemove() {
 }
 
 function buildSymAdd() {
+  S.addedSymptoms = new Set();
+  S.selectedAddCat = null;
+  // Ha/Yo'q tugmalari delegatsiya orqali ishlaydi
+}
+
+function buildSymAddCategory(cat) {
+  S.selectedAddCat = cat;
   const active = S.activeSymptoms || [];
   const addSec = $('sym-add-section');
   if (!addSec) return;
   addSec.innerHTML = '';
+  addSec.style.display = 'block';
   S.addedSymptoms = new Set();
-  const notActive = [...UYQU, ...ONGI, ...XON].filter(([lbl]) => !active.includes(lbl));
-  if (notActive.length === 0) {
-    addSec.innerHTML = '<div style="color:#999;font-size:.84rem;padding:8px 0">Barcha alomatlar royxatda bor</div>';
+
+  let items = [];
+  if (cat === 'uyqu')   items = UYQU.filter(([lbl]) => !active.includes(lbl));
+  if (cat === 'ongi')   items = ONGI.filter(([lbl]) => !active.includes(lbl));
+  if (cat === 'xon')    items = XON.filter(([lbl])  => !active.includes(lbl));
+  if (cat === 'ruqiya') items = RUQIYA_SYMPTOMS.filter(s => !active.includes(s)).map(s => [s, s]);
+  if (cat === 'kalima') items = KALIMALAR.filter(k => !active.includes(k)).map(k => [k, k]);
+
+  // Kategoriya tugmalarini highlight qilish
+  document.querySelectorAll('.sym-cat-btn').forEach(b => {
+    b.className = b.dataset.cat === cat
+      ? 'btn btn-black sym-cat-btn'
+      : 'btn btn-outline sym-cat-btn';
+  });
+
+  if (items.length === 0) {
+    addSec.innerHTML = '<div style="color:#999;font-size:.84rem;padding:8px 0">Bu kategoriyada qo\'shish uchun alomat yo\'q</div>';
     return;
   }
-  notActive.forEach(([lbl, key]) => {
+  items.forEach(([lbl, key]) => {
     const div = document.createElement('div');
     div.className = 'sym-item';
     div.innerHTML = '<div class="sym-box"><svg class="sym-check" viewBox="0 0 14 14" fill="none"><polyline points="2,7 5.5,10.5 12,3.5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="sym-text">' + lbl + '</span>';
@@ -781,6 +815,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.id === 'btn-go-offline')   go('s-offline');
     if (e.target.id === 'btn-new-analysis') { S.uyqu=new Set(); S.ongi=new Set(); S.xon=new Set(); go('s-uyqu'); }
     if (e.target.id === 'btn-go-holat')     go('s-holat');
+    // Yangi alomat: ha/yo'q
+    if (e.target.id === 'btn-new-sym-yes') {
+      const sec = $('new-sym-section');
+      if (sec) sec.style.display = 'block';
+    }
+    if (e.target.id === 'btn-new-sym-no') {
+      const sec = $('new-sym-section');
+      if (sec) sec.style.display = 'none';
+      S.addedSymptoms = new Set();
+    }
+    // Kategoriya tanlash
+    if (e.target.classList.contains('sym-cat-btn')) {
+      buildSymAddCategory(e.target.dataset.cat);
+    }
     if (e.target.id === 'btn-start-listen') { setupAndStartListen(e.target.dataset); }
     if (e.target.id === 'btn-show-history') showHistory();
   });
