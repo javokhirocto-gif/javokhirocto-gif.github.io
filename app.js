@@ -841,18 +841,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.id === 'btn-go-holat')     go('s-holat');
     // Yangi alomat: ha/yo'q
     if (e.target.id === 'btn-new-sym-yes') {
-      $('btn-new-sym-yes').className = 'btn btn-black';
-      $('btn-new-sym-no').className  = 'btn btn-outline';
-      $('btn-new-sym-yes').style.flex = '1'; $('btn-new-sym-yes').style.padding = '14px';
-      $('btn-new-sym-no').style.flex  = '1'; $('btn-new-sym-no').style.padding  = '14px';
+      $('btn-new-sym-yes').classList.add('active');
+      $('btn-new-sym-no').classList.remove('active');
       const sec = $('new-sym-section');
       if (sec) sec.style.display = 'block';
     }
     if (e.target.id === 'btn-new-sym-no') {
-      $('btn-new-sym-no').className  = 'btn btn-black';
-      $('btn-new-sym-yes').className = 'btn btn-outline';
-      $('btn-new-sym-no').style.flex  = '1'; $('btn-new-sym-no').style.padding  = '14px';
-      $('btn-new-sym-yes').style.flex = '1'; $('btn-new-sym-yes').style.padding = '14px';
+      $('btn-new-sym-no').classList.add('active');
+      $('btn-new-sym-yes').classList.remove('active');
       const sec = $('new-sym-section');
       if (sec) sec.style.display = 'none';
       S.addedSymptoms = new Set();
