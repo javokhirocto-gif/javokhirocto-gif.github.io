@@ -826,7 +826,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* LISTEN — proslushaldim */
-  $('btn-listened')?.addEventListener('click', () => { buildRuqiyaSyms(); go('s-ruqiya-syms'); });
+  $('btn-listened')?.addEventListener('click', () => {
+    if (S.currentDayNum === 1 && S.currentListenNum === 1) {
+      buildRuqiyaSyms(); go('s-ruqiya-syms');
+    } else {
+      buildSymRemove(); buildSymAdd(); go('s-after-listen');
+    }
+  });
 
   /* s-after-listen da saqlash tugmasi to'g'ridan ishlatiladi */
 
