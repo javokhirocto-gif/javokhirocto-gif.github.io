@@ -779,6 +779,10 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btn-to-ruqiya')?.addEventListener('click', () => go('s-ruqiya'));
   $('btn-to-offline')?.addEventListener('click', () => go('s-offline'));
 
+  /* RUQIYA STEPS */
+  $('btn-to-kalima')?.addEventListener('click', () => { buildKalima(); go('s-kalima'); });
+  $('btn-to-sym-update')?.addEventListener('click', () => { buildSymRemove(); buildSymAdd(); go('s-after-listen'); });
+
   /* LISTEN — proslushaldim */
   $('btn-listened')?.addEventListener('click', () => { buildRuqiyaSyms(); go('s-ruqiya-syms'); });
 
