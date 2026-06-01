@@ -285,10 +285,11 @@ function buildHolat() {
 
   // Progress
   if (logs.length > 0) {
-    const pct = Math.min(Math.round(day / 11 * 100), 100);
+    const progressDay = S.progress ? (S.progress.max_day || 0) : 0;
+    const pct = Math.min(Math.round(progressDay / 11 * 100), 100);
     html += '<div class="progress-card">' +
       '<div class="progress-header"><span class="progress-title">🎧 Ruqiya kursi</span>' +
-      '<span class="progress-days">' + day + ' / 11 kun</span></div>' +
+      '<span class="progress-days">' + progressDay + ' / 11 kun</span></div>' +
       '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + pct + '%"></div></div>' +
       '</div>';
   }
