@@ -300,12 +300,7 @@ function buildHolat() {
 
   c.innerHTML = html;
 
-  $('btn-go-ruqiya').addEventListener('click', () => go('s-ruqiya'));
-  $('btn-go-offline').addEventListener('click', () => go('s-offline'));
-  $('btn-new-analysis').addEventListener('click', () => {
-    S.uyqu = new Set(); S.ongi = new Set(); S.xon = new Set();
-    go('s-uyqu');
-  });
+  // handlers via event delegation
 }
 
 /* ── BUILD: SYMPTOM LISTS ───────────────────────────────────────────────── */
@@ -402,27 +397,25 @@ function buildRuqiyaMenu() {
 
   const listenBtn = $('btn-start-listen');
   if (listenBtn) {
-    listenBtn.addEventListener('click', () => {
-      // Kun va marta ni hisoblash
-      if (todayLogs.length < 2) {
-        S.currentDayNum = nextDay;
-        S.currentListenNum = nextListen;
-      } else {
-        S.currentDayNum = nextDay;
-        S.currentListenNum = 1;
-      }
-      S.selectedFeelings = new Set();
-      S.removedSymptoms = new Set();
-      S.addedSymptoms = new Set();
-      startListen();
-    });
+    // handled via event delegation
+    // store computed values in button dataset
+    listenBtn.dataset.dayNum    = (todayLogs.length < 2) ? nextDay : nextDay;
+    listenBtn.dataset.listenNum = (todayLogs.length < 2) ? nextListen : 1;
   }
-
-  const histBtn = $('btn-show-history');
-  if (histBtn) histBtn.addEventListener('click', showHistory);
 }
 
 /* ── LISTEN ─────────────────────────────────────────────────────────────── */
+function setupAndStartListen(dataset) {
+  S.currentDayNum    = parseInt(dataset.dayNum)    || 1;
+  S.currentListenNum = parseInt(dataset.listenNum) || 1;
+  S.selectedFeelings  = new Set();
+  S.removedSymptoms   = new Set();
+  S.addedSymptoms     = new Set();
+  S.selectedRuqiyaSyms = new Set();
+  S.selectedKalimalar  = new Set();
+  startListen();
+}
+
 function startListen() {
   const label = $('listen-label');
   if (label) label.textContent = S.currentDayNum + '-kun · ' + S.currentListenNum + '-marta';
@@ -779,9 +772,18 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btn-to-ruqiya')?.addEventListener('click', () => go('s-ruqiya'));
   $('btn-to-offline')?.addEventListener('click', () => go('s-offline'));
 
-  /* RUQIYA STEPS */
-  $('btn-to-kalima')?.addEventListener('click', () => { buildKalima(); go('s-kalima'); });
-  $('btn-to-sym-update')?.addEventListener('click', () => { buildSymRemove(); buildSymAdd(); go('s-after-listen'); });
+  /* RUQIYA STEPS — event delegation (dynamic screens) */
+  document.addEventListener('click', e => {
+    if (e.target.id === 'btn-to-kalima')    { buildKalima(); go('s-kalima'); }
+    if (e.target.id === 'btn-to-sym-update') { buildSymRemove(); buildSymAdd(); go('s-after-listen'); }
+    if (e.target.id === 'btn-start-analysis') { S.uyqu=new Set(); S.ongi=new Set(); S.xon=new Set(); go('s-uyqu'); }
+    if (e.target.id === 'btn-go-ruqiya')    go('s-ruqiya');
+    if (e.target.id === 'btn-go-offline')   go('s-offline');
+    if (e.target.id === 'btn-new-analysis') { S.uyqu=new Set(); S.ongi=new Set(); S.xon=new Set(); go('s-uyqu'); }
+    if (e.target.id === 'btn-go-holat')     go('s-holat');
+    if (e.target.id === 'btn-start-listen') { setupAndStartListen(e.target.dataset); }
+    if (e.target.id === 'btn-show-history') showHistory();
+  });
 
   /* LISTEN — proslushaldim */
   $('btn-listened')?.addEventListener('click', () => { buildRuqiyaSyms(); go('s-ruqiya-syms'); });
