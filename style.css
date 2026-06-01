@@ -44,12 +44,12 @@ html, body {
 }
 .app-logo {
   font-size: 1.05rem; font-weight: 800; letter-spacing: .01em;
-  color: var(--black);
+  color: var(--gold);
 }
 .app-logo span {
-  color: var(--black);
-  background: linear-gradient(135deg, #b8860b 0%, #d4a017 50%, #c8971a 100%);
-  -webkit-background-clip: text;
+  color: var(--gold);
+  background: none;
+  -webkit-background-clip: initial;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
@@ -442,4 +442,12 @@ html, body {
 .section-title {
   font-size: .72rem; font-weight: 700; letter-spacing: .08em;
   text-transform: uppercase; color: var(--gray-400); margin-bottom: 8px;
+}
+
+/* ── YES/NO BUTTONS ───────────────────────────────── */
+#btn-new-sym-yes.active,
+#btn-new-sym-no.active {
+  background: var(--black);
+  color: #fff;
+  border-color: var(--black);
 }
