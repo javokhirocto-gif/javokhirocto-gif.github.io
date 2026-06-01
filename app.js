@@ -302,11 +302,11 @@ function buildHolat() {
       '</div>';
   }
 
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
-    '<button class="btn btn-black" id="btn-go-ruqiya">🎧 Ruqiya tinglash</button>' +
-    '<button class="btn btn-outline" id="btn-go-offline">📅 Tashrif yozish</button>' +
+  html += '<div class="btn-pair" style="margin-bottom:10px">' +
+    '<button class="btn btn-black" id="btn-go-ruqiya">Ruqiya tinglash</button>' +
+    '<button class="btn btn-outline" id="btn-go-offline">Tashrif yozish</button>' +
     '</div>' +
-    '<button class="btn btn-outline" id="btn-new-analysis" style="margin-bottom:32px">🔄 Yangi tahlil</button>';
+    '<button class="btn btn-outline" id="btn-new-analysis" style="margin-bottom:32px">Yangi tahlil</button>';
 
   c.innerHTML = html;
 
