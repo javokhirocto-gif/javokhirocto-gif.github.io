@@ -895,21 +895,35 @@ document.addEventListener('DOMContentLoaded', () => {
     domla: {
       title: 'Sayfulloh domla haqida',
       body: "O'zbekiston Xalq Tabobati Assotsiatsiyasi a'zosi.\n\nOliy ma'lumotli mutaxassis — Misr, Saudiya Arabistoni, Turkiya, Moskva va Sankt-Peterburgda tahsil olgan.\n\n'Ruhiy bezovtalik muolajasi' sohasida ixtisoslashgan tajribali Roqiy.",
+      map: false,
     },
     markaz: {
       title: 'TIB VA DAM markazi',
-      body: "Yangi Toshkent, Gulzor MFY\nYangi Qo'yliq bozori, Food City ko'chasi\n\nQabul: Jumaday tashqari har kuni\n- Ertalab: 07:00\n- Kechqurun: 20:00",
+      body: "Yangi Toshkent, Gulzor MFY\nYangi Qo'yliq bozori, Food City ko'chasi\n\nQabul: Jumaday tashqari har kuni\n— Ertalab: 07:00\n— Kechqurun: 20:00",
+      map: false,
     },
     manzil: {
       title: 'Manzil',
-      body: "Yangi Toshkent, Gulzor MFY\nYangi Qo'yliq bozori, Food City ko'chasi",
+      body: "Yangi Toshkent, Gulzor MFY\nYangi Qo'yliq bozori, Food City ko'chasi\n\nJumaday tashqari: 07:00 va 20:00",
+      map: true,
+      lat: 41.3264, lon: 69.3728,
     },
   };
   document.querySelectorAll('.info-row[data-info]').forEach(row => {
     row.addEventListener('click', () => {
       const d = INFO[row.dataset.info]; if (!d) return;
       const c = $('info-content');
-      if (c) c.innerHTML = '<div class="res-label">' + d.title + '</div><div class="res-text">' + d.body + '</div>';
+      if (c) c.innerHTML = '<div class="res-label">' + d.title + '</div><div class="res-text" style="white-space:pre-wrap">' + d.body + '</div>';
+      const mw = $('map-wrap'), mf = $('map-frame');
+      if (mw && mf) {
+        if (d.map) {
+          mf.src = 'https://yandex.uz/map-widget/v1/?ll=' + d.lon + '%2C' + d.lat + '&z=16&pt=' + d.lon + '%2C' + d.lat + ',pm2rdm';
+          mw.style.display = 'block';
+        } else {
+          mf.src = '';
+          mw.style.display = 'none';
+        }
+      }
       go('s-info-detail');
     });
   });
