@@ -376,22 +376,13 @@ function buildRuqiyaMenu() {
   let html = '';
 
   // Joriy holat
-  if (day > 0) {
+  if (currentDay > 0) {
+    const pct = Math.min(Math.round(currentDay/11*100),100);
     html += '<div class="progress-card" style="margin-bottom:14px">' +
       '<div class="progress-header"><span class="progress-title">🎧 Ruqiya kursi</span>' +
-      '<span class="progress-days">' + day + ' / 11 kun</span></div>' +
-      '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' +
-      Math.min(Math.round(day/11*100),100) + '%"></div></div></div>';
+      '<span class="progress-days">' + currentDay + ' / 11 kun</span></div>' +
+      '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + pct + '%"></div></div></div>';
   }
-
-  // Instruksiya
-  html += '<div class="res-card" style="margin-bottom:14px">' +
-    '<div class="res-label">Tinglash tartibi</div>' +
-    '<div class="res-text" style="font-size:.82rem">' +
-    '1. Tahorat oling\n2. Tinch xonada, ko\'zni yumib o\'tiring\n' +
-    '3. Naushnik yoki kolonka orqali tinglang\n' +
-    '⚠️ Terlash, titroq — shifo jarayoni boshlanganidan darak' +
-    '</div></div>';
 
   if (canListen) {
     html += '<button class="btn btn-black" id="btn-start-listen" style="margin-bottom:8px">' +
