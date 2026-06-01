@@ -31,7 +31,7 @@ const UYQU = [
   ["Yaqinlari bilan yaqinlik (tushda)","u21"],
   ["Yonida kimdir yotgandek tuyulishi","u22"],
   ["Uyquda nimadir bosishi","u23"],
-  ["Bakirish, ovozi chiqmay qolishi","u24"],
+  ["Baqirish, ovozi chiqmay qolishi","u24"],
 ];
 const ONGI = [
   ["Ma'lum vaqtda bosh og'rig'i","o01"],
@@ -70,14 +70,14 @@ const FEELINGS = [
 ];
 
 const RUQIYA_SYMPTOMS = [
-  "Ko'p achish", "Kekirish", "Ko'z yoshlanishi",
+  "Ko'z achish", "Kekirish", "Ko'z yoshlanishi",
   "Yuz, jag' tortilishi", "Tananing bir tomonida uyushish, tortilish",
   "Bo'yin og'rig'i", "Qorin og'rig'i", "O'pka og'rig'i",
   "Qo'l og'rig'i", "Yelka, kurak og'rig'i",
   "Umurtqa og'riq to'lqin bo'lib kelishi", "Yurak sanchishi",
   "Qovuq, bel og'rig'i", "Oyoq og'rig'i", "Tomog'ga tiqilish",
   "Og'riq kuchayib yurishi", "Qaltiroq turishi",
-  "Sovuqotish, junjikih, qizib ketish", "Yig'lab yuborish",
+  "Sovuqotish, qizib ketish", "Yig'lab yuborish",
   "Kulgi kelishi", "Uyqusi kelishi", "G'azab kelishi",
   "'Domlaning kuchi yetmaydi' degan fikr kelishi",
   "Allohga ishonmaslik fikri kelishi", "Xoch (krest) ko'zga ko'rinishi",
@@ -304,7 +304,7 @@ function buildHolat() {
 
   html += '<div class="btn-pair" style="margin-bottom:10px">' +
     '<button class="btn btn-black" id="btn-go-ruqiya">Ruqiya tinglash</button>' +
-    '<button class="btn btn-outline" id="btn-go-offline">Tashrif yozish</button>' +
+    '<button class="btn btn-outline" id="btn-go-offline">Tashrifga yozilish</button>' +
     '</div>' +
     '<button class="btn btn-outline" id="btn-new-analysis" style="margin-bottom:32px">Yangi tahlil</button>';
 
