@@ -968,12 +968,12 @@ document.addEventListener('DOMContentLoaded', () => {
     },
     markaz: {
       title: 'TIB VA DAM markazi',
-      body: "Yangi Toshkent, Gulzor MFY\nYangi Qo'yliq bozori, Food City ko'chasi\n\nQabul: Jumaday tashqari har kuni\n— Ertalab: 07:00\n— Kechqurun: 20:00",
+      body: "Yangi Toshkent, Gulzor MFY\nYangi Qo'yliq bozori, Food City ko'chasi\n\nQabul: Jumadan tashqari har kuni\n— Ertalab: 07:00\n— Kechqurun: 20:00",
       map: false,
     },
     manzil: {
       title: 'Manzil',
-      body: "Yangi Toshkent, Gulzor MFY\nYangi Qo'yliq bozori, Food City ko'chasi\n\nJumaday tashqari: 07:00 va 20:00",
+      body: "Yangi Toshkent, Gulzor MFY\nYangi Qo'yliq bozori, Food City ko'chasi\n\nJumadan tashqari: 07:00 va 20:00",
       map: true,
       lat: 41.3264, lon: 69.3728,
     },
