@@ -132,42 +132,13 @@
   <!-- 1. TELEFON -->
   <div class="screen active" id="sc-phone">
     <div class="title">Telefon raqam</div>
-    <div class="subtitle">Tasdiqlash kodi Telegram ilovasiga keladi</div>
+    <div class="subtitle">Davom etish uchun telefon raqamingizni kiriting</div>
     <div class="field">
       <label>Telefon raqam</label>
       <input id="inp-phone" type="tel" inputmode="tel" placeholder="+998 90 123 45 67" autocomplete="tel">
     </div>
-    <div class="notice n-info">
-      📱 Telegram ilovasidagi <strong>@VerificationCodes</strong> ga kod keladi
-    </div>
     <div class="notice n-error" id="phone-err"></div>
-    <button class="btn btn-black" id="btn-send">Kod yuborish →</button>
-  </div>
-
-  <!-- 2. OTP -->
-  <div class="screen" id="sc-otp">
-    <div class="title">Kodni kiriting</div>
-    <div class="subtitle">6 xonali tasdiqlash kodi</div>
-    <div class="phone-badge">
-      <span>📱</span>
-      <span id="phone-show"></span>
-      <span class="phone-change" onclick="goScreen('sc-phone')">O'zgartirish</span>
-    </div>
-    <div class="n-code" id="dev-code"></div>
-    <div class="otp-wrap">
-      <input class="otp-d" id="o0" type="number" inputmode="numeric" maxlength="1" min="0" max="9">
-      <input class="otp-d" id="o1" type="number" inputmode="numeric" maxlength="1" min="0" max="9">
-      <input class="otp-d" id="o2" type="number" inputmode="numeric" maxlength="1" min="0" max="9">
-      <input class="otp-d" id="o3" type="number" inputmode="numeric" maxlength="1" min="0" max="9">
-      <input class="otp-d" id="o4" type="number" inputmode="numeric" maxlength="1" min="0" max="9">
-      <input class="otp-d" id="o5" type="number" inputmode="numeric" maxlength="1" min="0" max="9">
-    </div>
-    <div class="notice n-error" id="otp-err" style="margin-top:10px"></div>
-    <button class="btn btn-black" id="btn-verify" style="margin-top:16px">Tasdiqlash →</button>
-    <div class="timer">
-      <span id="timer-txt">Qayta yuborish: <strong id="timer-n">4:59</strong></span>
-      <a id="btn-resend" class="off" onclick="resend()"> | Qayta yuborish</a>
-    </div>
+    <button class="btn btn-black" id="btn-send">Davom etish →</button>
   </div>
 
   <!-- 3a. YANGI FOYDALANUVCHI — ma'lumotlar -->
@@ -222,13 +193,12 @@
 <script>
 const API = "https://ruhiyat-production.up.railway.app";
 let phone = '';
-let timerIv = null;
 
 // ── Screens ──────────────────────────────────────────────────────────────────
 function goScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id)?.classList.add('active');
-  const map = {'sc-phone':0,'sc-otp':1,'sc-info':2,'sc-welcome':2,'sc-success':3};
+  const map = {'sc-phone':0,'sc-info':1,'sc-welcome':1,'sc-success':2};
   const idx = map[id] ?? 0;
   ['step-1','step-2','step-3'].forEach((s,i) => {
     const el = document.getElementById(s);
@@ -269,134 +239,35 @@ function goApp() {
   window.location.href = 'index.html';
 }
 
-// ── STEP 1: Telefon ───────────────────────────────────────────────────────────
+// ── STEP 1: Telefon (OTP-siz) ───────────────────────────────────────────────
 document.getElementById('btn-send').addEventListener('click', async () => {
   const val = document.getElementById('inp-phone').value.trim();
   if (!val || val.length < 9) return showErr('phone-err', "Telefon raqamni to'g'ri kiriting");
 
   const btn = document.getElementById('btn-send');
-  btn.disabled = true; btn.textContent = 'Yuborilmoqda...';
-
-  try {
-    const res = await api('/api/otp/send', {phone: val});
-    if (!res?.ok) {
-      showErr('phone-err', res?.detail || 'Xatolik yuz berdi');
-      btn.disabled = false; btn.textContent = 'Kod yuborish →';
-      return;
-    }
-
-    phone = val;
-    document.getElementById('phone-show').textContent = val;
-
-    // DEV MODE: kodni ko'rsatish
-    const codeEl = document.getElementById('dev-code');
-    if (res.dev_code) {
-      codeEl.textContent = `Tasdiqlash kodi: ${res.dev_code}`;
-      codeEl.style.display = 'block';
-    }
-
-    goScreen('sc-otp');
-    startTimer();
-    document.getElementById('o0').focus();
-  } catch(e) {
-    showErr('phone-err', "Server bilan aloqa yo'q. Qayta urinib ko'ring.");
-  }
-  btn.disabled = false; btn.textContent = 'Kod yuborish →';
-});
-
-// ── OTP input ─────────────────────────────────────────────────────────────────
-for (let i = 0; i < 6; i++) {
-  const inp = document.getElementById(`o${i}`);
-  inp.addEventListener('input', e => {
-    const v = e.target.value.replace(/\D/g,'');
-    e.target.value = v.slice(-1);
-    if (v && i < 5) document.getElementById(`o${i+1}`).focus();
-    if (getCode().length === 6) document.getElementById('btn-verify').click();
-  });
-  inp.addEventListener('keydown', e => {
-    if (e.key === 'Backspace' && !e.target.value && i > 0)
-      document.getElementById(`o${i-1}`).focus();
-  });
-  inp.addEventListener('paste', e => {
-    e.preventDefault();
-    const p = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'');
-    [...p.slice(0,6)].forEach((d,j) => { const el = document.getElementById(`o${j}`); if (el) el.value = d; });
-    document.getElementById(`o${Math.min(p.length,5)}`)?.focus();
-    if (p.length >= 6) setTimeout(() => document.getElementById('btn-verify').click(), 100);
-  });
-}
-
-function getCode() {
-  return [...Array(6)].map((_,i) => document.getElementById(`o${i}`)?.value || '').join('');
-}
-
-// ── Timer ─────────────────────────────────────────────────────────────────────
-function startTimer() {
-  let s = 299;
-  const resend = document.getElementById('btn-resend');
-  const txt    = document.getElementById('timer-txt');
-  const cnt    = document.getElementById('timer-n');
-  resend.className = 'off';
-  txt.style.display = 'inline';
-  clearInterval(timerIv);
-  timerIv = setInterval(() => {
-    s--;
-    cnt.textContent = `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
-    if (s <= 0) {
-      clearInterval(timerIv);
-      txt.style.display = 'none';
-      resend.className = '';
-    }
-  }, 1000);
-}
-
-async function resend() {
-  if (!phone) return;
-  const res = await api('/api/otp/send', {phone});
-  if (res?.dev_code) {
-    const codeEl = document.getElementById('dev-code');
-    codeEl.textContent = `Yangi kod: ${res.dev_code}`;
-    codeEl.style.display = 'block';
-  }
-  for (let i = 0; i < 6; i++) document.getElementById(`o${i}`).value = '';
-  document.getElementById('o0').focus();
-  startTimer();
-}
-
-// ── STEP 2: Verify ────────────────────────────────────────────────────────────
-document.getElementById('btn-verify').addEventListener('click', async () => {
-  const code = getCode();
-  if (code.length < 6) return showErr('otp-err', "6 xonali kodni to'liq kiriting");
-
-  const btn = document.getElementById('btn-verify');
   btn.disabled = true; btn.textContent = 'Tekshirilmoqda...';
 
   try {
-    const res = await api('/api/otp/verify', {phone, code});
-    if (!res?.ok) {
-      showErr('otp-err', res?.detail || "Noto'g'ri kod");
-      btn.disabled = false; btn.textContent = 'Tasdiqlash →';
-      return;
-    }
+    phone = val;
+    // Telefon bo'yicha foydalanuvchi bor-yo'qligini tekshiramiz (tasdiqlash kodisiz)
+    const res = await api('/api/check-user', {phone: val});
 
-    clearInterval(timerIv);
-
-    if (res.registered && res.user) {
-      // Eski foydalanuvchi — xush kelibsiz ekrani
+    if (res && res.ok && res.exists && res.user) {
+      // Eski foydalanuvchi — to'g'ridan-to'g'ri kirish
       const u = res.user;
       document.getElementById('welcome-name').textContent = u.full_name || '';
       document.getElementById('welcome-info').textContent =
         `${u.age || ''} yosh · ${u.region || ''}`;
-      saveUser(u);
+      saveUser({...u, phone: val});
       goScreen('sc-welcome');
     } else {
       // Yangi foydalanuvchi — ma'lumot to'ldirish
       goScreen('sc-info');
     }
   } catch(e) {
-    showErr('otp-err', "Server bilan aloqa yo'q.");
+    showErr('phone-err', "Server bilan aloqa yo'q. Qayta urinib ko'ring.");
   }
-  btn.disabled = false; btn.textContent = 'Tasdiqlash →';
+  btn.disabled = false; btn.textContent = 'Davom etish →';
 });
 
 // ── Eski foydalanuvchi kirishi ────────────────────────────────────────────────
