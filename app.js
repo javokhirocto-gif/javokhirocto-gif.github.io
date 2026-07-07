@@ -975,7 +975,7 @@ document.addEventListener('DOMContentLoaded', () => {
       title: 'Manzil',
       body: "Yangi Toshkent, Gulzor MFY\nYangi Qo'yliq bozori, Food City ko'chasi\n\nJumadan tashqari: 07:00 va 20:00",
       map: true,
-      lat: 41.3264, lon: 69.3728,
+      lat: 41.170189, lon: 69.290909,
     },
   };
   document.querySelectorAll('.info-row[data-info]').forEach(row => {
