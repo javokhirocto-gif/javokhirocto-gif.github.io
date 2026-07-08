@@ -853,7 +853,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const all  = allLabels();
 
     const msgs = [
-      ['Tahlil qilinmoqda','GROQ AI javob tayyorlamoqda'],
+      ['Tahlil qilinmoqda','Javob tayyorlanmoqda'],
       ['Alomatlar tekshirilmoqda','Biroz sabr qiling'],
       ['Natija tayorlanmoqda','Deyarli tayyor...'],
     ];
